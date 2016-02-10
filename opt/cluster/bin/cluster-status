@@ -1,0 +1,13 @@
+#!/bin/sh
+
+sort=node
+
+if [ $# -ge 1 ]; then
+    sort=$1
+fi
+
+module load anaconda/2.7
+
+$CLUSTER_UTIL_ROOT/external/cluster_monitor/stat/mm_trackTorque.py -r -o $sort
+
+module unload anaconda/2.7

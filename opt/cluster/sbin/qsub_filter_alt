@@ -1,0 +1,82 @@
+#!/bin/bash
+
+function validate_qsub_args() {
+
+    args=("$@")
+    midx=$(echo "${#args[@]}-1" | bc)
+
+    valid=1
+    for i in $(seq 0 $midx); do
+        if [ "${args[$i]}" == "-W" ]; then
+            j=$(echo "$i+1" | bc)
+
+            echo ${args[$j]} | grep 'depend=' > /dev/null 2>&1
+
+            if [ $? -eq 0 ]; then
+                echo ${args[$j]} | awk -F ':' '{print $NF}' | egrep -i '^[0-9]+.*' > /dev/null 2>&1
+                if [ $? -ne 0 ]; then
+                    echo "invalid job dependency: ${args[$j]}" 1>&2
+                    valid=0
+                    break
+                fi
+            fi
+        fi
+    done
+
+    echo $valid
+}
+
+if [ $( validate_qsub_args $@ ) -ne 1 ]; then
+    exit -1
+fi
+
+vlist=""
+for k in $( env | awk -F '=' '{print $1}' ); do
+
+    ## ignore any exported BASH function as it can be wrongly interpreted by torque
+    if [[ $k =~ ^BASH_FUNC.*$ ]]; then
+        continue
+    fi
+
+    ## ignore any exported XDG_*, variables set by pam_systemd on access nodes
+    if [[ $k =~ ^XDG_.*$ ]]; then
+        continue
+    fi
+
+    ## ignore DBUS_SESSION_BUS_ADDRESS causing gnome-based application not working remotely
+    if [ "$k" == "DBUS_SESSION_BUS_ADDRESS" ]; then
+        continue
+    fi
+
+    ## ignore the right-brace of bash function usually put in a separate line
+    if [ "$k" == "}" ]; then
+        continue
+    fi
+
+    ## ignore the "_" variable representing the current command
+    if [ "$k" == "_" ]; then
+        continue
+    fi
+
+    ## fix the "DISPLAY" variable for graphical UI 
+    if [ "$k" == "DISPLAY" ]; then
+        if [[ $DISPLAY =~ ^:[0-9]+\.?[0-9]*$ ]]; then
+            k="DISPLAY="$( hostname -f )$DISPLAY
+        fi
+    fi
+
+    if [ -z $vlist ]; then
+        vlist="${k}"
+    else
+        vlist="${vlist},${k}"
+    fi
+
+done
+
+# export all local environment variables to remote nodes
+echo "#PBS -S /opt/cluster/bin/trqbash"
+echo "#PBS -v $vlist"
+
+while read i; do
+    echo $i
+done

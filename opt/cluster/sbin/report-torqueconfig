@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# 16feb2012 - roboos: created
+
+echo
+echo ==========================================================================
+echo =========          Torque queue manager configuration               ======
+echo ==========================================================================
+echo
+
+if [ -e /usr/bin/qmgr ] ; then
+echo print server | /usr/bin/qmgr
+fi
+
+echo
+echo ==========================================================================
+echo =========             Moab scheduler configuration                  ======
+echo ==========================================================================
+echo
+
+if [ -e /usr/local/moab/etc/moab.cfg ] ; then
+cat /usr/local/moab/etc/moab.cfg
+fi
+
+echo
+echo
+

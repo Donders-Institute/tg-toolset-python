@@ -1,0 +1,16 @@
+.TH SOCKET_CLIENT 1 "25 june 2006" dccn "Mentat Cluster Utilities"
+.SH NAME
+socket_client \- simple client using IO::Socket
+.SH SYNOPSIS
+.B socket_client
+.RB HOST
+.RB PORT_NUMBER
+.SH DESCRIPTION
+opens socket connection to HOST:PORT_NUMBER and returns one line of server output prepended
+with the name of the host
+.SH EXAMPLE
+$ socket_client mentat070 60201
+
+mentat070  17:47:57 up 46 days, 23:30,  8 users,  load average: 0.00, 0.00, 0.00
+.SH AUTHOR
+Bram Daams <bram.daams@donders.ru.nl>

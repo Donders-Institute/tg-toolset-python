@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+
+# generate useful output from license manager info
+
+use strict;
+use warnings;
+
+#print "\n  Cluster MATLAB usage, based on licenses in use\n\n";
+my $lmstatexe="$ENV{'CLUSTER_UTIL_ROOT'}/bin/lmstat";
+my @licencedata;
+
+if ( -x $lmstatexe ) {
+	#get the data into an array
+	@licencedata=`$lmstatexe -a`;
+} else {
+	die "cannot run $lmstatexe";
+}
+
+
+#print the heading for the output
+#my $heading=sprintf ("%-8s %-10s %4s in use since: %3s %-5s %5s", "user", "machine", "mvers", "day", "date", "time");
+#print "$heading\n";
+#print "-" x length($heading);
+#print "\n";
+
+#initialisation of some variables:
+my $curpkg="";
+my $curlicmax=0;
+my $curlicuse=0;
+my $pkgcount=0;
+my $pkgheader;
+my $pkglist;
+my $summary="";
+
+#parse each line from the license server
+foreach my $line (@licencedata) {
+	#Users of MATLAB:  (Total of 251 licenses issued;  Total of 159 licenses in use
+	if ($line =~ /User.? of (.*?):  \(Total of (\d+) licenses? issued;  Total of (\d+) licenses? in use\)/ ) {
+		#print header only if there is at least one dccn user
+		if ($pkgcount >= 1) {
+			# append to the header of the previous section of lmstat -a
+			$pkgheader .= " ($pkgcount by dccn users)\n";
+			# append final header to the summary for later
+			$summary .= $pkgheader;
+			# print dccn relevant output for the previous section of lmstat -a
+			print "\n" .$pkgheader .  "=" x (length($pkgheader) -1). "\n";
+			print $pkglist;
+		}
+		$curpkg=$1;
+		$curlicmax=$2;
+		$curlicuse=$3;
+		$pkgcount=0;
+		$pkglist="";
+		#update the package header
+		$pkgheader="package: $curpkg $curlicuse of $curlicmax in use";
+	}
+	#skip lines not for donders users
+	next if ($line !~ /(fcdc\d+|dccn\d+|donders\.nl|dccn\.nl)/i);
+	# count number of users for this package
+	$pkgcount++;
+	#prepare line for interpretation
+	chomp $line;
+	$line =~ s/^\s//;
+	my @cols=split(/\s+/, $line);
+	#take only the hostname part, not the rest of the fqdn:
+#        $cols[2] =~ s/(\w+).*/$1/;	
+        $cols[2] =~ s/(\w+)\..*/$1/;
+	#print the output line
+	$pkglist .= sprintf ("%-8s %-10s %5s in use since: %3s %-5s %5s\n", $cols[1], $cols[2], $cols[4], $cols[-3], $cols[-2], $cols[-1]);
+}
+
+print "\nSummary:\n\n" . $summary . "\n";
+

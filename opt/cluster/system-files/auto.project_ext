@@ -1,0 +1,1 @@
+3010029 -fstype=nfs,hard,intr,exec,nodev,nosuid,rw,timeo=600,rsize=32768,wsize=32768,gid=655  dccn-qnap001:/fieldtrip

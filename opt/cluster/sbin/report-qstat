@@ -1,0 +1,10 @@
+#!/bin/sh
+# 11apr2012 - edwger: changed qstat path from /usr/local/torque/bin
+#                     to /usr/bin (with new torqueinstallation 2.5.11)
+#
+# 10nov2011 - roboos: output in GB instead of bytes
+
+if [ -e /usr/bin/qstat ] ; then
+/usr/bin/qstat -atGn1
+fi
+

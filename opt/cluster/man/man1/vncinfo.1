@@ -1,0 +1,21 @@
+.\" Process this file with
+.\" groff -man -Tascii vncinfo.1
+.\"
+.TH VNCINFO 1 "26 january 2006" dccn "Mentat Cluster Utilities"
+.SH NAME
+vncinfo \- lists your running vncservers
+.SH SYNOPSIS
+.B vncinfo [USERNAME]
+.SH DESCRIPTION
+Search and list your active vncservers accross the mentat cluster. If [USERNAME] is specified, it will look for that users vnc sessions. Cluster node names are
+defined in the file /opt/cluster/machines. If there is no vncserver running, the error
+\'No vncservers found\' is returned.
+.SH FILES
+.I /opt/cluster/machines
+.RS
+Containes the list of machines that are searched for running vncservers.
+.SH AUTHOR
+Bram Daams <bram.daams@donders.ru.nl>
+.SH "SEE ALSO"
+.BR vncserver (1)
+.BR cluster-vncserver (1)

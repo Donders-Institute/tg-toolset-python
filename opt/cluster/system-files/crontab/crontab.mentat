@@ -1,0 +1,24 @@
+# remind users of their vnc sessions, every day at 4:55
+# 55 4 * * 0 perl /opt/cluster/check_vnc.pl
+
+# warn users about their idle matlab sessions, every day at 6:15
+# sessions older than 3 days get a warning
+# 15 6 * * * /opt/cluster/matlabXX-idle-warning-mail
+
+# kill idle matlab sessions, every day at 5:15
+# sessions older than 4 days get killed
+# 15 5 * * * /opt/cluster/matlabXX-idle-kill-session
+
+# hourly update the message of the day
+5 * * * * /mnt/install/kickstart/update-motd
+# update custom metrics for ganglia every MINUTE!
+* * * * * /opt/cluster/ganglia-metrics
+
+
+# Matlab & VNC kill scripts
+# gather info about running processes
+#6 * * * * /opt/cluster/pim_gather
+
+# kill processes that have been running for too long
+# start once per day, after notify has run
+#55 10 * * * /opt/cluster/pim_killer

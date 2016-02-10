@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# roboos, 08 nov 2011
+
+socket_client torque 60206

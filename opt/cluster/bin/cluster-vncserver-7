@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# improved version of the initial cluster-vnc script
+# - renamed to make consistent with the command that users know (vncserver)
+# - show all vnc sessions on each node
+#
+# an idea for further improvement is to show (seperately) a list of
+# available nodes that does not have a matlab session running
+#
+# roboos, 28 oct 2005
+#
+# 2jul06 bradaa: replaced telnet by socket_client
+machinelist=$CLUSTER_UTIL_ROOT/etc/machines.mentat
+printf "%-15s %-15s\n" "Username" "VNC session" 
+echo "-------------------------------------------------------"
+echo ${HOSTNAME%%.*} | grep -iq "dccn-c\|mentattst"
+#if [ "${HOSTNAME%%.*}" == "mentattst" ]; then
+if [ $? -eq 0 -a "$PBS_QUEUE" == "interactive" ] ; then
+  socket_client ${HOSTNAME%%.*} 60205 2> /dev/null | awk '/:/ {printf "%-15s%-25s\n", $1, $2}'
+fi
+#for machine in `cat $machinelist` ; do
+for machine in mentat004 ; do
+  socket_client $machine 60205 2> /dev/null | awk '/:/ {printf "%-15s%-25s\n", $1, $2}'
+done

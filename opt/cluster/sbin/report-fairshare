@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# 09 dec 2011 - roboos: created
+
+source /etc/profile.d/moab.sh
+
+if [ -e $MOABHOMEDIR/bin/diagnose ] ; then
+    $MOABHOMEDIR/bin/diagnose -f
+fi
+

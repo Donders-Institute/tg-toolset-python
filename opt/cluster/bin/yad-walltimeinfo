@@ -1,0 +1,253 @@
+#!/bin/bash
+#
+# cluster-walltimeinfo
+# Yad progress bar menu with Torque Walltime Countdown
+# 
+# 10-11-13: edwger
+# 07-12-15: edwger, walltimeinfo and meminfo in one single script
+# 10-12-15: edwger, changed from zenity to yad (new fork of zenity)
+# 15-12-15: edwger, change meminfo function to display real memory usage
+# 05-01-16: edwger, build in walltime adjustments every ~3 minutes
+#
+# Function progress "needs number of seconds" as argument.
+# example: 
+# $ progress 600
+#
+# Function meminfo "needs the requested amount of memory in bytes" as argument.
+# example: 
+# $ meminfo 512000000
+#
+# On torque exec-hosts with slow CPU and walltime-multiplier the given
+# walltime will be calculated with the given walltime divided with the 
+# found walltime-multiplier: secs=$(echo "$secs / $wtmp" | bc)
+#
+
+function progress(){
+      (
+      # Number of seconds supplied as argument: $wt_list_secs
+      secs=$1
+      printf "\r%02d:%02d:%02d" $((secs/3600)) $(( (secs/60)%60)) $((secs%60))
+
+      START=$secs
+      count=0
+      until [ "$secs" -eq "0" ]
+      do
+        ((secs-=1))
+        ((count+=1))
+
+        # adjust secs every ~3 minutes for more precise countdown
+        if [ "$count" -eq "180" ]
+        then
+           #echo "count is 180 reached"
+           # First check if "Walltime.Remaining = " exists in:
+           # qstat -f $PBS_JOBID
+           if `qstat -f $PBS_JOBID | grep -iq "Walltime.Remaining = "`
+           then
+              #echo "Walltime.Remaining =" found in status jobid
+              wt_rem=$(qstat -f $PBS_JOBID | grep -i "Walltime.Remaining = " | awk -F" " '{ print $3 }')
+              #echo "wt_rem is: $wt_rem"
+              #echo "wt_list_secs is: $wt_list_secs"
+              #echo "wt_old is: $wt_old"
+              #echo "secs is: $secs"
+              #echo "$wt_list_secs + $wt_rem - $wt_old" | bc
+
+              # Adjust secs to new value walltime remaining taking the walltime
+              # multiplier into account
+              secs=$(echo "$wt_list_secs + $wt_rem - $wt_old" | bc)
+           fi
+
+           # Next check if "Walltime.Exceeded = " exists in:
+           # qstat -f $PBS_JOBID
+           if `qstat -f $PBS_JOBID | grep -iq "Walltime.Exceeded = "`
+           then
+              wt_rem_tmp=$(qstat -f $PBS_JOBID | grep -i "Walltime.Exceeded = " | awk -F" " '{ print $3 }')
+
+              # Adjust secs to new value walltime remaining taking the walltime
+              # multiplier into account
+              secs=$(echo "$wt_list_secs - $wt_old + $wt_rem_tmp" | bc)
+           fi
+
+           # Change the ~3 minutes counter back to zero
+           count=0
+
+           #echo "Walltime adjusted..."
+        fi
+
+### Used to work with CentOS 6, unfortunately not with CentOS 7 ###
+#	# Send notifications the last 10, 5, 1 minute(s) (600, 300 or 60 secs)
+#	if [ "$secs" -eq "600" -a -n "$DISPLAY" ]
+#	then
+#	   notify-send -i /usr/share/icons/HighContrast/48x48/status/alarm.png -u critical -t 5000 "# Job ends in ~10 minutes! #" &
+#	fi
+#	if [ "$secs" -eq "300" -a -n "$DISPLAY" ]
+#	then
+#	   notify-send -i /usr/share/icons/HighContrast/48x48/status/alarm.png -u critical -t 5000 "# Job ends in ~5 minutes! #" &
+#	fi
+#	if [ "$secs" -eq "60" -a -n "$DISPLAY" ]
+#	then
+#	   notify-send -i /usr/share/icons/HighContrast/48x48/status/alarm.png -u critical -t 60000 "# Job ends in ~1 minute! #" &
+#	fi
+
+	# Yad requirements go here
+        PERCENT=$((100-100*secs/START))
+        echo "#Time remaining $(echo "obase=60;$secs" | bc | sed 's/^[ ]//' | sed 's/ /:/g')"  # Convert to H:M:S.
+        echo $PERCENT
+        sleep 1
+      done
+      ) |
+#      yad $DISPLAYARG --title "Walltime countdown" \
+      yad --geometry=400x100-0+0 --title "Walltime countdown" \
+        --progress \
+        --percentage=0 \
+        --text="Elapsed Walltime of JobID: ${PBS_JOBID%%.*}" \
+        --width=300 \
+        --height=100 \
+        --auto-close &
+
+# Here the progress() function ends
+}
+
+function meminfo(){
+      (
+      # Use given argument as requested memory for this job for calculations
+      requested=$1
+      #echo requested=$requested
+      START=$requested
+      #echo START=$START
+      secs=$wt_list_secs
+      #echo secs=$secs
+      pid=$2
+      #echo pid=$pid
+      pgid=$3
+      #pgid=$( ps -p $pid -o pgid | grep "$pid" )
+      #echo pgid=$pgid
+
+      while [ $secs -gt "0" ]
+      do
+         # Get used mem from qstat -f
+         #raw_used=$(qstat -f $PBS_JOBID | grep "resources_used.mem = " | 
+         #awk -F" " '{ print $3 }') ### NOT REALTIME ###
+         raw_used=`ps -eHo pid,pgid,sid,user,rss | grep $pgid | grep $USER | awk '{s=s+$5}END{print s"kb"}' 2>/dev/null`
+         # Convert to bytes
+         used=`bytes $raw_used`
+         # Yad requirements go here
+         PERCENT=$((100*used/START))
+         echo "#Max memory used:" `megabytes $used`" MB of requested" `megabytes $requested`" MB"
+         echo $PERCENT ; sleep 3 ; ((secs-=3))
+      done
+      ) |
+#      yad $DISPLAYARG --title "Memory usage" \
+      yad --geometry=400x100-0+165 --title "Memory usage" \
+        --progress \
+        --percentage=0 \
+        --text="Memory Usage by JobID: ${PBS_JOBID%%.*}" \
+        --width=300 \
+        --height=100 \
+        --auto-close &
+
+# Here the meminfo() function ends
+}
+
+# Conversion functions for bytes, kilobytes and megabytes
+function bytes {
+   # Stolen from Robert's script cluster-jobinfo
+   # convert GB, MB and KB to bytes using the trailing indicator
+   if [ -n "$1" ]; then
+      echo $1 | awk '/[gG][bB]$/ {sub("[gG][bB]", "", $1); print 1024*1024*1024*$1}; /[mM][bB]$/ {sub("[mM][bB]", "", $1); print 1024*1024*$1}; /[kG][bB]$/ {sub("[kK][bB]", "", $1); print 1024*$1}'
+   else
+      echo 0
+   fi
+
+# Here the bytes() function ends
+}
+
+function kilobytes {
+   # convert bytes to KB
+   if [ -n "$1" ]; then
+      echo "$1/(1024)" | bc
+   else
+      echo 0
+   fi
+
+# Here the kilobytes() function ends
+}
+
+function megabytes {
+   # convert bytes to MB
+   if [ -n "$1" ]; then
+      echo "$1/(1024*1024)" | bc
+   else
+      echo 0
+   fi
+
+# Here the megabytes() function ends
+}
+
+
+
+# Start main program
+#export DISPLAYARG=$@
+export NO_AT_BRIDGE=1
+# Read given arguments from /opt/cluster/bin/trqbash
+export pid=$1
+export pgid=$2
+
+# Check the Torque PBS environment requirements and determine walltime...
+if [ "$PBS_ENVIRONMENT" == "PBS_BATCH" -o "$PBS_ENVIRONMENT" == "PBS_INTERACTIVE" -a "$PBS_QUEUE" == "interactive" -o "$PBS_QUEUE" == "vgl" ]
+then 
+
+   # MEMORY INFO for cluster-meminfo
+   # Find out the requested memory specification with qsub and convert to bytes
+   export raw_reqmem=`qstat -f $PBS_JOBID | grep -i Resource_List.mem | cut -d = -f 2`
+   export reqmem=`bytes $raw_reqmem`
+
+
+   # WALLTIME INFO for cluster-walltimeinfo
+   # A few different ways the determine the given walltime. We use the latter
+   #   export wt=$(qstat -f $PBS_JOBID | grep "Resource_List.walltime" | awk '{match($0,"([0-9]+.*walltime= )(.*)",a);print substr(a[2],0,8)}')
+   #   export wt=$(qstat -f $PBS_JOBID | grep "Resource_List.walltime" | awk '{print substr($0,30,8)}')
+   #   export wt=$(qstat -f $PBS_JOBID | grep "Walltime.Remaining = " | awk -F" " '{ print $3 }')
+
+   export wt_list=$(qstat -f $PBS_JOBID | grep -i "Resource_List.walltime = " | awk -F" " '{ print $3 }')
+   #echo $wt_list
+
+   # Convert ##:##:## notification to seconds
+   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+   #echo $wt_list_secs 
+
+   # Check for yad GTK+ dialogs functionality
+   if [ -e /usr/bin/yad ]
+   then
+
+      # Check for walltime multiplier
+      ehost=`qstat -f $PBS_JOBID | grep -i exec_host | awk -F" " '{ print $3 }'`
+      if cluster-torqueconfig | grep "NODECFG\[${ehost%%/*}\]" | grep -q SPEED
+      then
+	 # Find multiplier info and calculate the new walltime
+         wtmp=$(cluster-torqueconfig | grep "NODECFG\[${ehost%%/*}\]" | awk '{match($0,"([0-9]+.*SPEED=)(.*)",a);print substr(a[2],0,4)}')
+	 #echo "Multiplier is: $wtmp"
+	 export wt_old=$wt_list_secs
+         #echo "Old walltime was: $(echo "obase=60;$wt_old" | bc | sed 's/^[ ]//' | sed 's/ /:/g')"  # Convert to H:M:S.
+         export wt_list_secs=$(echo "$wt_list_secs / $wtmp" | bc)
+	 #echo "New walltime is: $(echo "obase=60;$wt_list_secs" | bc | sed 's/^[ ]//' | sed 's/ /:/g')"  # Convert to H:M:S."
+
+	 # Supply some extra info to user...
+	 echo "Slow CPU detected!"
+	 echo "Walltime adjusted to: $(echo "obase=60;$wt_old" | bc | sed 's/^[ ]//' | sed 's/ /:/g') devided by $wtmp."
+         echo "New Walltime: $(echo "obase=60;$wt_list_secs" | bc | sed 's/^[ ]//' | sed 's/ /:/g')"  # Convert to H:M:S.
+      fi
+
+      # Here goes the actual yad meminfo-/progress-bar functions with args
+      progress $wt_list_secs
+      meminfo $reqmem $pid $pgid
+
+      # Supply some extra info after the Walltime countdown progress-bar start..
+      echo "Walltime expiration countdown started..."
+      echo "Memory info started..."
+   fi
+fi
+
+#if [ "$?" = -1 ] ; then
+#   yad --error \
+#   --text="Update canceled."
+#fi

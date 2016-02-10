@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ "$#" -lt 1 ]; then 
+    echo "usage: $0 host1 [host2] [host3] ..."
+    exit 1
+fi
+
+for node in "$@"; do
+
+    echo "reschedule jobs on $node ..."
+
+    for j in `checknode $node | grep 'Jobs:' | awk '{print $2}' | tr "," "\n"`; do
+        jinfo=(`qstat $j | egrep -i '^[0-9]+' | awk '{print $3, $NF}'`)
+        echo -n "job $j in ${jinfo[1]} queue owned by ${jinfo[0]} ..."
+        mjobctl -R $j
+    done
+
+done

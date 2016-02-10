@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# 16feb2012 - roboos: created
+
+socket_client torque 60208
+

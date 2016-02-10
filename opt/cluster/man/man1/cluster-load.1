@@ -1,0 +1,55 @@
+.\" Process this file with
+.\" groff -man -Tascii vncinfo.1
+.\"
+.TH CLUSTER_LOAD 1 "16 march 2006" dccn "Mentat Cluster Utilities"
+.SH NAME
+cluster-load\- get a list of load averages of the cluster machines
+.SH SYNOPSIS
+.B cluster-ssh 
+.RB [\| \-i \|\|]
+.RB [\| \-l \|\c
+.RI \| file \|]
+.SH DESCRIPTION
+By default it will execute the specified command on all mentat nodes.
+.SH OPTIONS
+
+.TP
+.BI \-l\  file 
+Use user file rather than the default of
+.IR /opt/cluster/machines .
+
+.TP
+.BI \-m
+Force to use the cluster wide machine file
+.IR /opt/cluster/machines
+even though you have a file named
+.IR ~/machines
+or have the
+.RB $ MACHINES
+environment variable set.
+
+.TP
+.BI \-y
+Connect to all machines defined in the NIS host table
+
+.SH ENVIRONMENT
+.TP
+.B MACHINES
+If
+.RB $ MACHINES
+is set, its value is a list of machines to connect to.
+
+.SH FILES
+.TP
+.I /opt/cluster/machines
+Centrally maintained list of mentat cluster machine names.
+.TP
+.I ~/machines
+Personal list of cluster machines. This file is used by default, unless overridden by the
+.BR \-m 
+option.
+
+.SH AUTHOR
+Bram Daams <bram.daams@fcdonders.ru.nl>
+.SH "SEE ALSO"
+.BR cluster-ssh(1)
