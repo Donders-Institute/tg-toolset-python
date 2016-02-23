@@ -1,0 +1,5 @@
+#%Module1.0#####################################################################
+##
+## version file for iRODS client
+##
+set ModulesVersion  "4.1.6"
