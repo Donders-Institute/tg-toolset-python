@@ -7,6 +7,16 @@ TORQUE_MACHINE_FILE=$CLUSTER_UTIL_ROOT/etc/machines.torque
 LOCAL_MACHINE_FILE=~/machines
 MACHINE_FILES="$LOCAL_MACHINE_FILE $MENTAT_MACHINE_FILE $TORQUE_MACHINE_FILE"
 
+function echo_success() {
+    echo "[  OK  ]"
+    return 0
+}
+
+function echo_failure() {
+    echo "[FAILED]"
+    return 0
+}
+
 function isSuperUser() {
     GRID=$(id -g "$(whoami)")
 
@@ -144,6 +154,73 @@ function rem_walltime() {
 }
 
 #---------------------------------------------------------------------#
+# torque_make_requirement: general interface to ask providing resource#
+#                          requiremnets.                              #
+# The requirement string is stored as $RESRC_REQUIREMENT variable     #
+#---------------------------------------------------------------------#
+function torque_make_requirement() {
+
+    # default requirements
+    local default_walltime=$1
+    local default_mem=$2
+
+    echo " "
+    echo "Specify the required time as HH:MM:SS (default $default_walltime)"
+    echo -n "Enter time (HH:MM:SS) or press enter for default: "
+    read WALLTIME
+    if [ -z "$WALLTIME" ]; then
+        WALLTIME=$default_walltime
+    fi
+
+    echo " "
+    echo "Specify the required memory as XXgb (default $default_mem)"
+    echo -n "Enter memory (XXgb) or press enter for default: "
+    read MEM
+
+    if [ -z "$MEM" ]; then
+       MEM=$default_mem
+    fi
+
+    while ! [[ $(echo $MEM | tail -3c | tr '[:upper:]' '[:lower:]') == "gb" ]]; do
+        echo " "
+        echo -n "Memory value needs to be specified with required "
+        echo -e "\033[1mGB/gb\033[0m!"
+        echo -n "Specify the required memory as XX"
+        echo -ne "\033[1m\033[5mgb\033[0m!"
+        echo " (default $default_mem)"
+        echo -n "Enter memory (XXgb) or press enter for default: "
+        read MEM;
+        if [ -z "$MEM" ]; then
+            MEM=$default_mem
+        fi
+    done
+
+    # compose RESC_REQUIREMENT variable
+    RESRC_REQUIREMENT="walltime=$WALLTIME,mem=$MEM"
+}
+
+#---------------------------------------------------------------------#
+# torque_make_display: fix the DISPLAY variable for X11 applications  #
+#---------------------------------------------------------------------#
+function torque_make_display() {
+
+    # complete the DISPLAY with HOSTNAME
+    if [ ${DISPLAY:0:1} == ":" ]; then
+        # the display variable is formatted as :1.0, whereas the X11 output should go to mentat001:1.0
+        DISPLAY=$HOSTNAME$DISPLAY
+    fi
+
+    # replace HOSTNAME by IP_ADDRESS as some GUI applications (e.g. LCModel) need it
+    local h=`echo $DISPLAY | awk -F ':' '{print $1}'`
+    local no_dp=`echo $DISPLAY | awk -F ':' '{print $2}'`
+    local ip=`getent ahostsv4 $h | grep $h | awk '{print $1}'`
+    DISPLAY="${ip}:${no_dp}"
+
+    # ensure that the display can be forwarded
+    xhost + > /dev/null 2>&1
+}
+
+#---------------------------------------------------------------------#
 # torque_run_guiapp: general wrapper and interface for submitting     #
 #                    interactive GUI application to the cluster.      #
 #---------------------------------------------------------------------#
@@ -171,60 +248,29 @@ function torque_run_guiapp() {
 
     if [ $hrs_now -lt 16 ] && [ $hrs_now -ge 8 ]; then
         echo "Default your job runs until 8pm."
-        echo "Specify the required time as HH:MM:SS (current default $remaining_walltime)"
+    fi
+
+    # compose RESRC_REQUIREMENT interactively
+    torque_make_requirement $remaining_walltime 3gb
+
+    # compose DISPLAY variable and make xhost setting
+    torque_make_display
+
+    echo
+    echo -n "submitting job for interactive $name_guiapp session ... "
+
+    jid_or_err=$( echo "$cmd_guiapp" | qsub -l ${RESRC_REQUIREMENT},nodes=1 -q $trq_queue 2>&1 )
+    ec=$?
+
+    if [ $ec -eq 0 ]; then
+        echo_success
+        echo "please wait the job to starts: $jid_or_err"
+        echo 
     else
-        echo "Specify the required time as HH:MM:SS (default $remaining_walltime)"
+        echo_failure
+        echo "error: $jid_or_err"
     fi
 
-    echo -n "Enter time (HH:MM:SS) or press enter for default: "
-    read walltime
-    if [ -z "$walltime" ]; then
-        walltime=$remaining_walltime
-    fi
-
-    echo " "
-    echo "Specify the required memory as XXgb (default 3gb)"
-    echo -n "Enter memory (XXgb) or press enter for default: "
-    read mem
-
-    if [ -z "$mem" ]; then
-        mem=3gb
-    fi
-
-    while ! [[ $(echo $mem | tail -3c | tr '[:upper:]' '[:lower:]') == "gb" ]]; do
-        echo " "
-        echo -n "Memory value needs to be specified with required "
-        echo -e "\033[1mGB/gb\033[0m!"
-        echo -n "Specify the required memory as XX"
-        echo -ne "\033[1m\033[5mgb\033[0m!"
-        echo " (default 3gb)"
-        echo -n "Enter memory (XXgb) or press enter for default: "
-        read mem;
-        if [ -z "$mem" ]; then
-            mem=3gb
-        fi
-    done
-
-    if [ ${DISPLAY:0:1} == ":" ]; then
-        # the display variable is formatted as :1.0, whereas the X11 output should go to mentat001:1.0
-        DISPLAY=$HOSTNAME$DISPLAY
-    fi
-
-    # replace HOSTNAME by IP_ADDRESS on DISPLAY as some GUI applications (e.g. LCModel) needs it
-    local h=`echo $DISPLAY | awk -F ':' '{print $1}'`
-    local no_dp=`echo $DISPLAY | awk -F ':' '{print $2}'`
-    local ip=`getent ahostsv4 $h | grep $h | awk '{print $1}'`
-    DISPLAY="${ip}:${no_dp}"
-
-    # ensure that the display can be forwarded
     echo
-    xhost +
-
-    echo
-    echo Requesting interactive $name_guiapp session on a suitable torque execution host using
-    echo
-    echo "$cmd_guiapp" | qsub -l walltime=$walltime,mem=$mem,nodes=1 -q $trq_queue
-    echo
-
-    return 0
+    return $ec
 }
