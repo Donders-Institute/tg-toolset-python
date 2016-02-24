@@ -17,5 +17,6 @@ module load lcmodel
 
 cmd_guiapp="${HOME}/.lcmodel/lcmgui"
 name_guiapp="LCModel GUI"
+trq_queue="lcmgui"
 
-torque_run_guiapp "${name_guiapp}" "${cmd_guiapp}"
+torque_run_guiapp "${name_guiapp}" "${cmd_guiapp}" "${trq_queue}"
