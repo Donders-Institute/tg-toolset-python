@@ -1,0 +1,14 @@
+#%Module1.0####################################################################### 
+##
+## iRODS modulefile
+## 
+
+source $env(DCCN_MOD_DIR)/share/common.tcl
+
+set version [file tail $ModulesCurrentModulefile]
+set arch [get_sys_arch]
+
+# get full version numbering, split by '.' and get the major version number
+set os_version [lindex [split [get_redhat_version] "."] 0]
+
+source [file join [file dirname $ModulesCurrentModulefile] common.tcl]

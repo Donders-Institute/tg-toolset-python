@@ -7,6 +7,16 @@ TORQUE_MACHINE_FILE=$CLUSTER_UTIL_ROOT/etc/machines.torque
 LOCAL_MACHINE_FILE=~/machines
 MACHINE_FILES="$LOCAL_MACHINE_FILE $MENTAT_MACHINE_FILE $TORQUE_MACHINE_FILE"
 
+function echo_success() {
+    echo "[  OK  ]"
+    return 0
+}
+
+function echo_failure() {
+    echo "[FAILED]"
+    return 0
+}
+
 function isSuperUser() {
     GRID=$(id -g "$(whoami)")
 
@@ -62,3 +72,205 @@ function extramatlabs()
 }
 
 
+#---------------------------------------------------------------------#
+# get_script_dir: resolve absolute directory in which the current     #
+#                 script is located.                                  #
+#---------------------------------------------------------------------#
+function get_script_dir() {
+    ## resolve the base directory of this executable
+    local SOURCE=$1
+    while [ -h "$SOURCE" ]; do
+        # resolve $SOURCE until the file is no longer a symlink
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+
+        # if $SOURCE was a relative symlink,
+        # we need to resolve it relative to the path
+        # where the symlink file was located
+
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+#---------------------------------------------------------------------#
+# rem_walltime: calculate remaining hours/minutes until 8 pm          #
+#---------------------------------------------------------------------#
+function rem_walltime() {
+    # Function to calculate the default walltime
+    # This function calculates the remaining hours/minutes until
+    # 20:00 (08 pm)
+    # This is used as the default walltime for torque if no walltime is
+    # specified in the matlab startscript (matlabXX)...
+    #
+    # 07nov13 - edwger
+
+    # Determine current time and specify end time (not 8pm but 7pm for
+    # calculation purpose (hours left after calculating remaining hours)
+    local now=$(date +"%k:%M")
+    local stop="19:00"
+    
+    local hrs_now=$((echo $now) | awk -F : '{ print $1 }')
+    local mins_now_1=$((echo $now) | awk -F : '{ print $2 }')
+
+    # remove leading zeros
+    mins_now="$(echo $mins_now_1 | sed 's/0*//')"
+
+    # mins_now can be 00 and becomes empty if zeros are stripped, so...
+    if [ -z $mins_now ]; then
+        mins_now="0"
+    fi
+
+    local hrs_remain=""
+    local mins_remain=""
+    if [ "$hrs_now" -ge "20" -o "$hrs_now" -lt "8" ]; then
+        # Default walltime is 4 hours between 8pm and 8am (night)
+        hrs_remain="04"
+        mins_remain="00"
+    else
+        # Calculate walltime between 8am until 8pm (day)
+        hrs_remain=$[19 - $hrs_now]
+        mins_remain=$[60 - $mins_now]
+
+        # mins_remain can be 60 if mins_now is 0. When mins_remain
+        # equals 60 it will be changed to 00 and hrs_remain will
+        # be increased by 1
+        if [ "$mins_remain" -eq "60" ]; then
+            mins_remain="00"
+            hrs_remain=$(($hrs_remain+1))
+        fi
+        
+        # Change walltime to 4 hours if remaining hours are less
+        # then 4 hours
+        if [ "$hrs_remain" -lt "4" ]; then
+            hrs_remain="04"
+            mins_remain="00"
+        fi
+    fi
+
+    # put remaining walltime in var
+    echo "$hrs_remain:$mins_remain:00"
+}
+
+#---------------------------------------------------------------------#
+# torque_make_requirement: general interface to ask providing resource#
+#                          requiremnets.                              #
+# The requirement string is stored as $RESRC_REQUIREMENT variable     #
+#---------------------------------------------------------------------#
+function torque_make_requirement() {
+
+    # default requirements
+    local default_walltime=$1
+    local default_mem=$2
+
+    echo " "
+    echo "Specify the required time as HH:MM:SS (default $default_walltime)"
+    echo -n "Enter time (HH:MM:SS) or press enter for default: "
+    read WALLTIME
+    if [ -z "$WALLTIME" ]; then
+        WALLTIME=$default_walltime
+    fi
+
+    echo " "
+    echo "Specify the required memory as XXgb (default $default_mem)"
+    echo -n "Enter memory (XXgb) or press enter for default: "
+    read MEM
+
+    if [ -z "$MEM" ]; then
+       MEM=$default_mem
+    fi
+
+    while ! [[ $(echo $MEM | tail -3c | tr '[:upper:]' '[:lower:]') == "gb" ]]; do
+        echo " "
+        echo -n "Memory value needs to be specified with required "
+        echo -e "\033[1mGB/gb\033[0m!"
+        echo -n "Specify the required memory as XX"
+        echo -ne "\033[1m\033[5mgb\033[0m!"
+        echo " (default $default_mem)"
+        echo -n "Enter memory (XXgb) or press enter for default: "
+        read MEM;
+        if [ -z "$MEM" ]; then
+            MEM=$default_mem
+        fi
+    done
+
+    # compose RESC_REQUIREMENT variable
+    RESRC_REQUIREMENT="walltime=$WALLTIME,mem=$MEM"
+}
+
+#---------------------------------------------------------------------#
+# torque_make_display: fix the DISPLAY variable for X11 applications  #
+#---------------------------------------------------------------------#
+function torque_make_display() {
+
+    # complete the DISPLAY with HOSTNAME
+    if [ ${DISPLAY:0:1} == ":" ]; then
+        # the display variable is formatted as :1.0, whereas the X11 output should go to mentat001:1.0
+        DISPLAY=$HOSTNAME$DISPLAY
+    fi
+
+    # replace HOSTNAME by IP_ADDRESS as some GUI applications (e.g. LCModel) need it
+    local h=`echo $DISPLAY | awk -F ':' '{print $1}'`
+    local no_dp=`echo $DISPLAY | awk -F ':' '{print $2}'`
+    local ip=`getent ahostsv4 $h | grep $h | awk '{print $1}'`
+    DISPLAY="${ip}:${no_dp}"
+
+    # ensure that the display can be forwarded
+    xhost + > /dev/null 2>&1
+}
+
+#---------------------------------------------------------------------#
+# torque_run_guiapp: general wrapper and interface for submitting     #
+#                    interactive GUI application to the cluster.      #
+#---------------------------------------------------------------------#
+function torque_run_guiapp() {
+
+    if [ $# -lt 2 ]; then
+        echo "invalid number of arguments" 1>&2
+        return 1
+    fi
+
+    local name_guiapp=$1
+    local cmd_guiapp=$2
+    local trq_queue="interactive"
+
+    if [ $# -eq 3 ]; then
+        trq_queue=$3
+    fi
+
+    echo " "
+    echo "Scheduling an interactive $name_guiapp session for execution on torque:"
+    echo " "
+
+    local hrs_now=$(date +"%k:%M" | awk -F : '{ print $1 }')
+    local remaining_walltime=$( rem_walltime )
+
+    if [ $hrs_now -lt 16 ] && [ $hrs_now -ge 8 ]; then
+        echo "Default your job runs until 8pm."
+    fi
+
+    # compose RESRC_REQUIREMENT interactively
+    torque_make_requirement $remaining_walltime 3gb
+
+    # compose DISPLAY variable and make xhost setting
+    torque_make_display
+
+    echo
+    echo -n "submitting job for interactive $name_guiapp session ... "
+
+    jid_or_err=$( echo "$cmd_guiapp" | qsub -l ${RESRC_REQUIREMENT},nodes=1 -q $trq_queue 2>&1 )
+    ec=$?
+
+    if [ $ec -eq 0 ]; then
+        echo_success
+        echo "please wait the job to starts: $jid_or_err"
+        echo 
+    else
+        echo_failure
+        echo "error: $jid_or_err"
+    fi
+
+    echo
+    return $ec
+}
