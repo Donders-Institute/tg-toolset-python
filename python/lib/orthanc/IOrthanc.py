@@ -3,10 +3,10 @@ import hashlib
 import json
 from datetime import datetime
 from zipfile import ZipFile
+import ConfigParser
 
 from common.Logger import getLogger
 from common.IRESTful import IRESTful, SimpleCallback, FileIOCallback
-
 
 class OrthancDicomMetadata(object):
     """
@@ -32,23 +32,24 @@ def decoder_OrthancDicomMetadata(obj):
     """
     return OrthancDicomMetadata(**obj)
 
-
 class IOrthanc:
     """
     class for Orthanc client interface using IRESTful pyCURL wrapper
     """
 
-    def __init__(self, host, port=8042):
+    def __init__(self, config):
         """
         class initializer
-        :param host: Orthanc REST server host
-        :param port: Orthanc REST server port
+        :param config: configuration file for Orthanc server connection
         :return:
         """
 
-        self.host = host
-        self.port = port
-        self.logger = getLogger()
+        cfg = ConfigParser.ConfigParser()
+        cfg.read(config)
+        self.logger = getLogger(name=self.__class__.__name__, lvl=int(cfg.get('LOGGING', 'level')))
+
+        self.host = cfg.get('PACS','orthanc_host')
+        self.port = cfg.get('PACS','orthanc_port')
 
     def getArchive(self, rsrc_path, dest_fpath, progress=False, checksum=True):
         """
@@ -60,7 +61,7 @@ class IOrthanc:
         :param checksum: calculate checksum value of each entry of the zip archive
         :return: True if success, otherwise False
         """
-        rest = IRESTful('http://%s:%d' % (self.host, self.port))
+        rest = IRESTful('http://%s:%s' % (self.host, str(self.port)))
         rest.accept = 'application/zip'
         rest.resource = '%s/archive' % rsrc_path
         cb = FileIOCallback("download", dest_fpath, progress)
@@ -117,7 +118,7 @@ class IOrthanc:
 
         studies = []
 
-        rest = IRESTful('http://%s:%d' % (self.host, self.port))
+        rest = IRESTful('http://%s:%s' % (self.host, str(self.port)))
         rest.resource = 'studies'
         cb = SimpleCallback()
         ick = rest.doGET(cb)
@@ -148,7 +149,7 @@ class IOrthanc:
         :return: (end-of-change flag, a list of retrieved Changes)
         """
 
-        rest = IRESTful('http://%s:%d' % (self.host, self.port))
+        rest = IRESTful('http://%s:%s' % (self.host, str(self.port)))
         rest.resource = 'changes'
         rest.params = ['since=%d' % since, 'limit=%d' % limit]
         cb = SimpleCallback()
@@ -166,7 +167,7 @@ class IOrthanc:
         :param rsrc_path: the resource path to the instance
         :return: the OrthancDicomMetadata object of "Instance" type
         """
-        rest = IRESTful('http://%s:%d' % (self.host, self.port))
+        rest = IRESTful('http://%s:%s' % (self.host, str(self.port)))
         rest.resource = rsrc_path
         cb = SimpleCallback()
         ick = rest.doGET(cb)
@@ -182,7 +183,7 @@ class IOrthanc:
         :param rsrc_path: the resource path to the series
         :return: the OrthancDicomMetadata object of "Series" type
         """
-        rest = IRESTful('http://%s:%d' % (self.host, self.port))
+        rest = IRESTful('http://%s:%s' % (self.host, str(self.port)))
         rest.resource = rsrc_path
         cb = SimpleCallback()
         ick = rest.doGET(cb)
@@ -198,7 +199,7 @@ class IOrthanc:
         :param rsrc_path: the resource path to the study
         :return: the OrthancDicomMetadata object of "Study" type
         """
-        rest = IRESTful('http://%s:%d' % (self.host, self.port))
+        rest = IRESTful('http://%s:%s' % (self.host, str(self.port)))
         rest.resource = rsrc_path
         cb = SimpleCallback()
         ick = rest.doGET(cb)
@@ -214,7 +215,7 @@ class IOrthanc:
         :param rsrc_path: the resource path to the patient
         :return: the OrthancDicomMetadata object of "Patient" type
         """
-        rest = IRESTful('http://%s:%d' % (self.host, self.port))
+        rest = IRESTful('http://%s:%s' % (self.host, str(self.port)))
         rest.resource = rsrc_path
         cb = SimpleCallback()
         ick = rest.doGET(cb)
