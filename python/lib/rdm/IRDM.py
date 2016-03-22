@@ -66,9 +66,9 @@ class IRDM:
             'irods_rest_endpt': 'http://rdmapptst.uci.ru.nl:8080/irods-rest-4.0.2.1-SNAPSHOT/rest',
             'irods_admin_username': 'irods',
             'irods_admin_password': '',
-            'irods_admin_authfile': os.path.join(os.path.expanduser('~'), '.irods/rdm-irods-utility/.irodsA_rdm_admin'),
+            'irods_admin_authfile': os.path.join(os.path.expanduser('~'), '.irods/irdm/.irodsA_rdm_admin'),
             'irodsAuthCached': 'true',
-            'irodsAuthFileName': os.path.join(os.path.expanduser('~'), '.irods/rdm-irods-utility/.irodsA'),
+            'irodsAuthFileName': os.path.join(os.path.expanduser('~'), '.irods/irdm/.irodsA'),
             'irodsSSLCACertificateFile': os.path.dirname(os.path.abspath(__file__)) + '/../ssl/irods-icat_chain.pem'
         }
 
@@ -1141,6 +1141,12 @@ class IRDMIcommand(IRDM):
         # never cache auth token for rods admin account
         if myUsername in ['irods']:
             authCached = False
+
+        # try to create directory for storing myAuthfile 
+        try:
+            os.mkdir( os.path.dirname(myAuthfile) )
+        except OSError:
+            pass
 
         irods_env['irods_user_name'] = myUsername
         irods_env['irods_authentication_file'] = myAuthfile

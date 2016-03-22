@@ -110,7 +110,9 @@ def makeTabular(title, data, d_keys, t_keys, separator):
             v = ''
             try:
                 v = r[ks[0]]
-                if type(v) is type([]):
+                if not v:
+                    v = '' 
+                elif type(v) is type([]):
                     dv = v
                     for i in xrange(len(dv)):
                         for k in ks[1:]:
