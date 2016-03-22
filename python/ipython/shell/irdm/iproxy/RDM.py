@@ -38,12 +38,13 @@ class RDM(Configurable):
 
         if self.irods_iftype == 'icommand':
             self.rdm = IRDMIcommand(config=self.irods_config, login=False, lvl=self.log_level)
-            try:
-                self.user_login()
-            except Exception, e:
-                pass
         else:
             self.rdm = IRDMRestful(config=self.irods_config, lvl=self.log_level)
+
+        try:
+            self.user_login()
+        except Exception, e:
+            pass
 
     def __del__(self):
         """
