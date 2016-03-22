@@ -2,22 +2,52 @@
 import os 
 import sys
 import argparse
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 sys.path.append('%s/external' % os.environ['DCCN_PYTHONDIR'])
 sys.path.append('%s/lib' % os.environ['DCCN_PYTHONDIR'])
 from orthanc.IOrthanc import IOrthanc
+from orthanc.WorklistManager import WorklistManager
 from common.Utils import makeTabular
 
 iorthanc = IOrthanc(config='%s/config/mr-config.ini' % os.environ['DCCN_PYTHONDIR'])
+wlmgr = WorklistManager(config='%s/config/mr-config.ini' % os.environ['DCCN_PYTHONDIR'])
 
 def load_ipython_extension(ipython):
     ipython.register_magic_function(pacs, 'line', magic_name='pacs')
+    ipython.register_magic_function(wklst, 'line', magic_name='wklst')
 
 def unload_ipython_extension(ipython):
     ipython.drop_by_id('pacs')
     pass
 
 ## magic functions
+def wklst(line):
+    """implements interfaces to WorklistManager"""
+
+    def valid_date(s):
+
+        if not s:
+            return date.today()
+        
+        try:
+            return datetime.strptime(s, "%Y-%m-%d")
+        except ValueError:
+            msg = "Not a valid date: '{0}'.".format(s)
+            raise argparse.ArgumentTypeError(msg)
+
+    p = argparse.ArgumentParser(description='retrieve DICOM worklist', prog='wklst')
+    p.add_argument('-d',
+          metavar = 'date',
+          dest    = 'date',
+          action  = 'store',
+          type    = valid_date,
+          default = '',
+          help    = 'date in %Y-%m-%d format, e.g. 2016-01-01')
+
+    args = p.parse_args(line.split())
+
+    print wlmgr.getWorklistItems(eDate = args.date)
+
 def pacs(line):
     """implements interfaces to Orthanc PACS server"""
     print('%s' % line)

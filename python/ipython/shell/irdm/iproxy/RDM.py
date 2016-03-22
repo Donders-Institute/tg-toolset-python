@@ -329,7 +329,7 @@ class RDM(Configurable):
         inputs = {'mode': mode}
 
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=False)
- 
+
         # cache collection identifiers
         get_ipython().user_ns['_rdm_mystate'].update_my_colls(out['collections'])
        
