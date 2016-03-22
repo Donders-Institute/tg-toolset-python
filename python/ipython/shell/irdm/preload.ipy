@@ -1,0 +1,353 @@
+#/usr/bin/env python
+import sys
+import getpass 
+import os 
+import argparse
+import atexit
+import inspect
+
+from __future__ import print_function
+from IPython.core.magic import (Magics, magics_class, line_magic,
+                                cell_magic, line_cell_magic)
+
+sys.path.append(os.environ['DCCN_PYTHONDIR'] + '/external')
+sys.path.append(os.environ['DCCN_PYTHONDIR'] + '/lib')
+sys.path.append(os.environ['IRDM_PREFIX'])
+from rdm.IRDM import *
+from common.Utils import makeTabular 
+from iproxy.RDM import *
+from iproxy.CollAttributeEditor import CollAttributeEditor
+from iproxy.UserAttributeEditor import UserAttributeEditor
+from iproxy.CollCreator import CollCreator
+
+@magics_class
+class MagicRDM(Magics):
+
+    def __init__(self, shell):
+
+        super(MagicRDM, self).__init__(shell)
+        self.shell = shell
+        self.rdm = RDM(config=shell.config)
+
+    @line_magic
+    def rdmconfig(self, line):
+        "print current RDM config"
+
+        return self.rdm.display()
+
+    @line_magic
+    def ihelp(self, line):
+        """print online document of RDM commands
+
+    usage: ihelp [<iRDM command>]
+        """
+
+        if not line:
+            docs = self.shell.magics_manager.lsmagic_docs(brief=True, missing='online help not available')['line']
+
+            msg = []
+            for m in inspect.getmembers(self, predicate=inspect.ismethod):
+                if m[0][0] != '_':
+                    try:
+                        msg.append({'command': m[0], 'description': docs[m[0]]})
+                    except KeyError,e:
+                        pass
+
+            msg = sorted(msg, key=lambda x:x['command'])
+ 
+            t = makeTabular('', msg, ['command','description'], ['iRDM command','Description'], '')
+            t.justify_columns[0] = 'right'
+            print(t.table.encode('utf-8'))
+        else:
+            docs = self.shell.magics_manager.lsmagic_docs(brief=False, missing='online help not available')['line']
+            try:
+                print(docs[line])
+            except KeyError,e:
+                print('online document not found: ', line)
+
+    @line_magic
+    def whoami(self, line):
+        """get current user profile
+
+    usage: whoami
+        """
+
+        return self.rdm.user_profile()
+
+    @line_magic
+    def otp(self, line):
+        """get user's data acceess password
+
+    usage: otp
+        """
+
+        return self.rdm.user_nextotp()
+
+    @line_magic
+    def mode(self, line):
+        """switch user mode
+
+    usage: mode [<user mode>]
+
+    where <user mode> can be either 'user' or 'admin'.
+
+    If <user mode> is not given, current mode is printed.       
+        """
+
+        if not line:
+           if _rdm_mystate.is_admin_mode:
+               print('You are in "admin" mode')
+           else:     
+               print('You are in "user" mode')
+
+           return None
+
+        l_data = line.split()
+        opt = l_data[0]
+         
+        if opt not in ['user','admin']:
+            print('unknown collection action: ', opt)
+            return None
+        else:
+            if opt == 'user':
+                if self.rdm.rdm.is_user_login:
+                    _rdm_mystate.is_admin_mode = False
+                    self.rdm.rdm.shell.cmd1('icd')
+                    self.rdm.rdm.admin_shell.cmd1('icd')
+                _rdm_mystate.flush()
+            elif opt == 'admin':
+                if self.rdm.rdm.is_user_login:
+                    if self.rdm.user_get()['isAdminOf']:
+                        _rdm_mystate.is_admin_mode = True
+                        self.rdm.rdm.shell.cmd1('icd')
+                        self.rdm.rdm.admin_shell.cmd1('icd')
+                    else:
+                        print('user not an admin: %s' % _rdm_mystate.cur_user)
+                        return False
+                _rdm_mystate.flush()
+        return True 
+
+    @line_magic
+    def login(self, line):
+        """login to RDM system
+
+    usage: login
+        """
+        return self.rdm.user_login()
+
+    @line_magic
+    def logout(self, line):
+        """logout from RDM system
+
+    usage: logout
+        """
+        return self.rdm.user_logout()
+
+    @line_magic
+    def icd(self, line):
+        """change work directory in the current collection
+
+    usage: icd [<directory>]
+        """
+        return self.rdm.coll_icd(path=line)
+
+    @line_magic
+    def ipwd(self, line):
+        "print current iRODS namespace"
+        return self.rdm.icommand_run('ipwd')
+
+    @line_magic
+    def ils(self, line):
+        "list files/directories in a collection"
+        return self.rdm.icommand_run('ils %s' % line)
+
+    @line_magic
+    def imkdir(self, line):
+        "create directories in a collection"
+        return self.rdm.icommand_run('imkdir %s' % line)
+
+    @line_magic
+    def iput(self, line):
+        "put file into a collection"
+        return self.rdm.icommand_run('iput %s' % line)
+
+    @line_magic
+    def iget(self, line):
+        "get file from a collection"
+        return self.rdm.icommand_run('iget %s' % line)
+
+    @line_magic
+    def user(self, line):
+        """user actions, check sub-commands with 'ihelp user'
+    usage: user [<action>] [<args>]
+
+    A list of avaialble actions:
+
+    * attrs - show the attributes of current or a given user
+
+             iRDM[1]: user attrs [irodsUserName] 
+
+    * edit - edit attributes of the current user profile
+
+    * find - find users matching the key-value attribute specified via args.
+
+             For example, to find a user with name contains 'lee'
+
+             iRDM[1]: user find name=lee
+        """
+
+        if not line:
+            print(self.shell.magics_manager.lsmagic_docs(brief=False, missing='online help not available')['line']['user'])
+            return False
+
+        l_data = line.split()
+        opt = l_data[0]
+
+        if opt not in ['find','attrs','edit']:
+            print('unsupported user action: ', opt)
+            return None
+        else:
+            if opt == 'find':
+                p = argparse.ArgumentParser(description='find user', prog='user find')
+                p.add_argument('clause',
+                               metavar = 'clause',
+                               help    = 'matching clause in key=value')
+                args = p.parse_args(l_data[1:])
+                return self.rdm.user_find(args.clause)
+            elif opt == 'attrs':
+                p = argparse.ArgumentParser(description='show user attributes', prog='user attrs')
+                p.add_argument('user',
+                               metavar = 'user',
+                               nargs   = '?',
+                               default = _rdm_mystate.cur_user,
+                               help    = 'the irods user name')
+                args = p.parse_args(l_data[1:])
+                return self.rdm.user_attrs(args.user)
+            elif opt == 'edit':
+                # accepting argument for specifying user name
+                p = argparse.ArgumentParser(description='edit user attributes', prog='user edit')
+                p.add_argument('user',
+                               metavar = 'user',
+                               nargs   = '?',
+                               default = _rdm_mystate.cur_user,
+                               help    = 'the irods user name')
+                args = p.parse_args(l_data[1:])
+
+                # lookup editor from cache or create new editor
+                ues = filter(lambda x:x.target['irodsUserName'] == args.user, _rdm_mystate.user_editors)
+
+                if ues:
+                    ues[0].cmdloop()
+                else:
+                    e = UserAttributeEditor(self.rdm, args.user)
+                    _rdm_mystate.user_editors.append(e)
+                    e.cmdloop()
+
+                return True
+            else:
+                pass
+                return None
+
+
+    @line_magic
+    def coll(self, line):
+        """collection actions, check sub-commands with 'ihelp coll'
+
+    usage: coll [<action>] [<args>]
+
+    A list of avaialble actions:
+
+    * create - create a new collection (user's admin mode is required)
+
+    * ls - get a list of collections available w.r.t. the current user mode
+ 
+    * list - an alias of 'ls'
+
+    * cd - get into a specific collection. Use <args> to specify the targeting
+           collection referred by a collection identifier and, optionally,
+           the snapshot version. For example,
+
+           iRDM[1]: coll cd di.dccn.DAC_3010000.01 [-v 2]
+
+    * goto - an alias of 'cd'
+
+    * attrs - get attributes of the current collection
+
+    * edit - edit attributes of the current collection
+        """
+
+        if not line:
+            print(self.shell.magics_manager.lsmagic_docs(brief=False, missing='online help not available')['line']['coll'])
+            return False
+
+        l_data = line.split()
+        opt = l_data[0]
+         
+        if opt not in ['ls','list','cd','goto','attrs','edit','create']:
+            print('unsupported collection action: ', opt)
+            return None
+        else:
+            if opt == 'create':
+                if not _rdm_mystate.is_admin_mode:
+                    print('You are not in admin mode, run "mode admin" first')
+                    return False
+                else:
+                    c = CollCreator(self.rdm)
+                    c.cmdloop()
+            elif opt in ['ls','list']:
+                p = argparse.ArgumentParser(description='list collections', prog='coll ls')
+                args = p.parse_args(l_data[1:])
+                return self.rdm.coll_list()
+            elif opt in ['cd', 'goto']:
+                p = argparse.ArgumentParser(description='goto a collection', prog='coll cd')
+                p.add_argument('identifier',
+                      metavar = 'identifier',
+                      help    = 'collection identifier')
+                p.add_argument('-v',
+                      metavar = 'version',
+                      dest    = 'version',
+                      action  = 'store',
+                      type    = int,
+                      default = 0,
+                      help    = 'version of collection snapshot')
+                args = p.parse_args(l_data[1:])
+                return self.rdm.coll_goto(identifier=args.identifier,version=args.version)
+            elif opt == 'attrs':
+                p = argparse.ArgumentParser(description='get attributes of current collection', prog='coll attrs')
+                return self.rdm.coll_attrs()
+            elif opt == 'edit':
+
+                # lookup editor from cache or create new editor
+                ces = filter(lambda x:x.target['collId'] == _rdm_mystate.cur_coll, _rdm_mystate.coll_editors)
+
+                if ces:
+                    ces[0].cmdloop()
+                else:
+                    e = CollAttributeEditor(self.rdm)
+                    _rdm_mystate.coll_editors.append(e)
+                    e.cmdloop()
+            else:
+                pass
+                return None
+
+## hooker functions
+def _update_prompt(self):
+    _rdm_mystate.cur_user = self.user_ns['_rdm_magics'].rdm.rdm.config.get('RDM','irodsUserName')
+    %config PromptManager.in_template = _rdm_mystate.__shell_prompt__() 
+
+def _shutdown(ip_shell):
+    print('leaving RDM interactive shell ...')
+    del ip_shell.user_ns['_rdm_magics'].rdm
+
+## get the ipython shell object 
+_ip = get_ipython()
+
+## register magic functions
+_rdm_magics = MagicRDM(_ip)
+_ip.register_magics(_rdm_magics)
+
+## register hooks 
+_ip.set_hook("pre_prompt_hook", _update_prompt)
+
+## register atexits 
+atexit.register(_shutdown, _ip)

@@ -4,7 +4,18 @@ import sys
 import re 
 import getpass 
 import textwrap 
+import pwd
 from terminaltables import SingleTable
+
+def userExist(username):
+    '''check if given user name is existing as a system user id'''
+    ick = False
+    try:
+        pwd.getpwnam(username)
+        ick = True
+    except KeyError,e:
+        pass
+    return ick
 
 def inputPassword(prompt="password"):
 
