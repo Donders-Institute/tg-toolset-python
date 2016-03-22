@@ -40,7 +40,7 @@ c.TerminalIPythonApp.exec_files = [
 c.RDM.log_level = 0
 
 # type of iRODS client interface (icommand or restful) 
-c.RDM.irods_iftype = 'icommand'
+c.RDM.irods_iftype = 'restful'
 
 # tabular display for list of collections: 
 #   - tab_coll_header: header names of the table, the number following ':' specifies max. colume width
