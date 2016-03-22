@@ -427,6 +427,10 @@ class IRDMRestful(IRDM):
         self.irods_username = self.config.get('RDM', 'irodsUserName')
         self.irods_password = self.config.get('RDM', 'irodsPassword')
 
+        # try to ask password from stdin if it's unavailable
+        if not self.irods_password:
+            self.irods_password = inputPassword('iRODS %s password (%s)' % (self.irods_username, self.config.get('RDM','irodsAuthScheme')))
+
     def ls(self, ns_collection, rel_path, recursive=False):
 
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
