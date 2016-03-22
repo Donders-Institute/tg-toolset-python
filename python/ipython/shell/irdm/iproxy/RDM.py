@@ -10,7 +10,7 @@ sys.path.append(os.environ['DCCN_PYTHONDIR'] + '/lib')
 sys.path.append(os.environ['DCCN_PYTHONDIR'] + '/external')
 from rdm.IRDM import *
 from common.Utils import makeTabular,makeAttributeValueTable
-from common.Logger import logLevels
+from common.Logger import getLogger
 
 class RDM(Configurable):
 
@@ -32,6 +32,8 @@ class RDM(Configurable):
 
     def __init__(self, config=None):
         super(RDM, self).__init__(config=config)
+
+        self.logger = getLogger('RDM', lvl=self.log_level)
 
         if not os.path.exists(self.irods_config):
             self.irods_config = os.environ['DCCN_PYTHONDIR'] + '/config/rdm-config.ini'
@@ -168,14 +170,26 @@ class RDM(Configurable):
 
         if _my_coll:
             get_ipython().user_ns['_rdm_mystate'].cur_coll = _my_coll[0][2]
-            ## determine iRODS namespace to move the underlying shell
-            _coll_name = _my_coll[0][3]
-            self.rdm.shell.cmd1('icd %s' % _coll_name)
-            self.rdm.admin_shell.cmd1('icd %s' % _coll_name)
+
+            if type(self.rdm) is IRDMIcommand:
+                ## determine iRODS namespace to move the underlying shell
+                _coll_name = _my_coll[0][3]
+                self.rdm.shell.cmd1('icd %s' % _coll_name)
+                self.rdm.admin_shell.cmd1('icd %s' % _coll_name)
         else:
             raise ValueError('collection not found: %s v%d' % (identifier, version))
 
         return True
+
+    def coll_goto_home(self):
+        """ move to the top-level namespace of iRODS
+        :return:
+        """
+        if type(self.rdm) is IRDMIcommand:
+            self.rdm.shell.cmd1('icd')
+            self.rdm.admin_shell.cmd1('icd')
+        else:
+            pass
 
     def coll_list(self):
         """ list collections

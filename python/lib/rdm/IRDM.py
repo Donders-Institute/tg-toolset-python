@@ -684,6 +684,8 @@ class IRDMRestful(IRDM):
         for k,v in inputs.iteritems():
             d["irodsRuleInputParameters"].append({"name": "%s" % '*'+k, "value": "%s" % str(v)});
 
+        print('%s' % repr(d))
+
         ## run RESTful POST
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)

@@ -112,15 +112,13 @@ class MagicRDM(Magics):
             if opt == 'user':
                 if self.rdm.rdm.is_user_login:
                     _rdm_mystate.is_admin_mode = False
-                    self.rdm.rdm.shell.cmd1('icd')
-                    self.rdm.rdm.admin_shell.cmd1('icd')
+                    self.rdm.coll_goto_home()
                 _rdm_mystate.flush()
             elif opt == 'admin':
                 if self.rdm.rdm.is_user_login:
                     if self.rdm.user_get()['isAdminOf']:
                         _rdm_mystate.is_admin_mode = True
-                        self.rdm.rdm.shell.cmd1('icd')
-                        self.rdm.rdm.admin_shell.cmd1('icd')
+                        self.rdm.coll_goto_home()
                     else:
                         print('user not an admin: %s' % _rdm_mystate.cur_user)
                         return False
