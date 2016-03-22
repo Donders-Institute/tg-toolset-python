@@ -682,7 +682,7 @@ class IRDMRestful(IRDM):
               "irodsRuleInputParameters": [] }
         
         for k,v in inputs.iteritems():
-            d["irodsRuleInputParameters"].append({"name": "%s" % '*'+k, "value": "%s" % str(v)});
+            d["irodsRuleInputParameters"].append({"name": "%s" % '*'+k, "value": "%s" % str(v).replace('%','&#37;')});
 
         print('%s' % repr(d))
 
