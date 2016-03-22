@@ -77,6 +77,24 @@ class IRDM:
         if config and os.path.exists(config):
             self.config.read(config)
 
+        self.is_user_login = False
+
+    def login(self):
+        """
+        logs into RDM service.
+        The implementation should probe the user authentication and switch self.is_user_login accordingly.
+        :return:
+        """
+        self.is_user_login = True
+
+    def logout(self):
+        """
+        logs out from the RDM service.
+        The implementation should logout the service (e.g. clean up authentication tokens.
+        :return:
+        """
+        self.is_user_login = False
+
     def mkdir(self, ns_collection, rel_path):
         """
         makes directory (or collection in iRODS terminology) and non-existing parent directories (collections)
@@ -427,9 +445,31 @@ class IRDMRestful(IRDM):
         self.irods_username = self.config.get('RDM', 'irodsUserName')
         self.irods_password = self.config.get('RDM', 'irodsPassword')
 
-        # try to ask password from stdin if it's unavailable
+    def login(self):
+        """
+        perform a simple IRESTful ping with given user credential.  On success, set self.is_user_login to True
+        :return:
+        """
+        # ask password from stdin if it's unavailable
         if not self.irods_password:
             self.irods_password = inputPassword('iRODS %s password (%s)' % (self.irods_username, self.config.get('RDM','irodsAuthScheme')))
+
+        rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
+        rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
+        rest.resource = 'server'
+
+        cb = SimpleCallback()
+        ick = rest.doGET(cb)
+
+        if ick:
+            self.is_user_login = True
+        else:
+            raise IRDMException('fail to ping server: %s' % rest.resource)
+
+    def logout(self):
+        # remove cached password for irods account.
+        self.irods_password = None
+        self.is_user_login = False
 
     def ls(self, ns_collection, rel_path, recursive=False):
 
@@ -735,8 +775,6 @@ class IRDMIcommand(IRDM):
         # initialise iRODS credentials for icommands
         self.admin_shell = None
         self.shell = None
-
-        self.is_user_login = False
 
         if login:
             try:
