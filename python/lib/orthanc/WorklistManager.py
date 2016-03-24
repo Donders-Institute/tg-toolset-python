@@ -165,7 +165,7 @@ class WorklistManager:
             self.logger.debug(qry)
 
             crs = conn.cursor()
-            rslt = crs.execute(qry)
+            crs.execute(qry)
 
             for (eId, calendarId, projectId, subj_ses, startDate, startTime, userId, projectName) in crs.fetchall():
    
@@ -179,8 +179,25 @@ class WorklistManager:
                     eStartTime = datetime(startDate.year, startDate.month, startDate.day)
                     eStartTime += startTime
                 else:
-                    eStartTime = startTime 
- 
+                    eStartTime = startTime
+
+                # make another SQL query to get user name
+                try:
+                    crs1 = conn.cursor()
+                    crs1.execute('SELECT firstName,lastName FROM users where id = \'%s\'' % userId)
+                    (firstName, lastName) = crs.fetchone()
+                    userId = '%s %s' % (firstName, lastName)
+                except Exception, e:
+                    self.logger.exception('User name select failed: %s' % userId)
+                else:
+                    pass
+                finally:
+                    try:
+                        crs1.close()
+                    except Exception, e:
+                        pass
+
+                # construct worklist item
                 wl = WorklistItem(projectId,
                                   projectName,
                                   subjectId,
