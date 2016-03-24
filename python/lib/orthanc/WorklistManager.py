@@ -7,6 +7,7 @@ from Cheetah.Template import Template
 import ConfigParser
 import sys
 import os
+import re
 import getpass
 
 class WorklistItem(object):
@@ -75,12 +76,14 @@ class WorklistManager:
                         'pdb_username': 'test',
                         'pdb_password': 'guessit',
                         'pdb_dbname': 'fcdctest',
+                        'mr_scanner_regex': '.*(SKYRA|PRASMA(FIT)).*',
                         'dcmtk_setup_cmd': '',
                         'dcmtk_wlbroker_store': '/scratch/OrthancData/DicomWorklist/WLBROKER'}
 
         cfg = ConfigParser.ConfigParser(defaults=cfg_defaults)
         cfg.read(config)
 
+        self.mr_scanner_regex = re.compile(cfg.get('PACS','mr_scanner_regex'))
         self.dcmtk_setup = cfg.get('PACS','dcmtk_setup_cmd')
         self.dcmtk_wlbroker_dir = cfg.get('PACS','dcmtk_wlbroker_store')
         self.logger = getLogger(name=self.__class__.__name__, lvl=int(cfg.get('LOGGING', 'level')))
@@ -160,15 +163,23 @@ class WorklistManager:
         worklist = []
 
         try:
-            qry = 'SELECT a.id,a.calendar_id,a.project_id,a.subj_ses,a.start_date,a.start_time,a.user_id,b.projectName FROM calendar_items_new as a, projects as b WHERE a.status = \'CONFIRMED\' and a.subj_ses like \'%%-%%\' and a.start_date = DATE(\'%s\') and a.project_id = b.id ORDER BY a.start_time' % eDate.strftime('%Y-%m-%d')
+            qry = 'SELECT a.id,a.project_id,a.subj_ses,a.start_date,a.start_time,a.user_id,b.projectName,c.description as lab_desc FROM calendar_items_new as a, projects as b, calendars as c WHERE a.status = \'CONFIRMED\' and a.subj_ses like \'%%-%%\' and a.start_date = DATE(\'%s\') and a.project_id = b.id ORDER BY a.start_time' % eDate.strftime('%Y-%m-%d')
 
             self.logger.debug(qry)
 
             crs = conn.cursor()
             crs.execute(qry)
 
-            for (eId, calendarId, projectId, subj_ses, startDate, startTime, userId, projectName) in crs.fetchall():
-   
+            for (eId, projectId, subj_ses, startDate, startTime, userId, projectName, labDesc) in crs.fetchall():
+
+                # only events for MR scanners are considered
+                m = self.mr_scanner_regex.match(labDesc.upper())
+
+                if not m:
+                    continue
+
+                scannerAE = m.group(1)
+
                 d = subj_ses.split()
                 subjectId = d[0]
                 sessionId = d[-1]
@@ -204,7 +215,7 @@ class WorklistManager:
                                   sessionId,
                                   startDate.strftime('%Y%m%d'),
                                   eStartTime.strftime('%H%M%S'),
-                                  calendarId,
+                                  scannerAE,
                                   userId)
 
                 worklist.append(wl)
