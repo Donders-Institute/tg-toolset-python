@@ -126,7 +126,10 @@ class Shell:
             t0 = time.time()
             already_killed = False
             timeout0 = timeout
-            pid = os.spawnve(os.P_NOWAIT, '/bin/sh', ['/bin/sh', '-c', 'module load %s; %s > %s 2>&1' % (self.setup_m, cmd, soutfile)], self.env)
+            _cmd = '%s > %s 2>&1' % (cmd, soutfile)
+            if self.setup_m:
+                _cmd = 'module load %s; %s' % (self.setup_m, _cmd)
+            pid = os.spawnve(os.P_NOWAIT, '/bin/sh', ['/bin/sh', '-c', _cmd], self.env)
             while 1:
                 wpid, sts = os.waitpid(pid, os.WNOHANG)
                 if wpid != 0:
