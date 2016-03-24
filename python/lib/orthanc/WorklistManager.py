@@ -82,7 +82,7 @@ class WorklistManager:
         cfg.read(config)
 
         self.dcmtk_setup = cfg.get('PACS','dcmtk_setup_cmd')
-        self.dcmtk_wlbroker_dir = cfg.get('PACS','dcmtk_wlbroker_dir')
+        self.dcmtk_wlbroker_dir = cfg.get('PACS','dcmtk_wlbroker_store')
         self.logger = getLogger(name=self.__class__.__name__, lvl=int(cfg.get('LOGGING', 'level')))
 
         self.__getDBConnectInfo__(cfg)
@@ -140,7 +140,9 @@ class WorklistManager:
 
             # convert DICOM dump to DICOM format
             dcm_fpath = os.path.join(worklistStore, '%s.dcm' % wl.studyId)
-            rc,output,m = s.cmd1('%s %s %s' % (dump2dcm_cmd, dump_fpath, dcm_fpath))
+            s_cmd = '%s %s %s' % (dump2dcm_cmd, dump_fpath, dcm_fpath)
+            self.logger.debug('dump2dcm command: %s' % s_cmd)
+            rc,output,m = s.cmd1(s_cmd)
             if rc != 0:
                 self.logger.error('DICOM worklist item creation failed: ' % wl.studyId)
             else:

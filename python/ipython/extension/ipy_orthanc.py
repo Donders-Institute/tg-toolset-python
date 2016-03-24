@@ -56,8 +56,7 @@ def wklst(line):
 
     p = argparse.ArgumentParser(description='retrieve DICOM worklist', prog='wklst')
     p.add_argument('action',
-                   metavar = 'worklist manager action',
-                   dest = 'action',
+                   metavar = 'action',
                    type = valid_action,
                    default = 'show',
                    help = 'specify one of the valid worklist actions: %s' % ','.join(valid_actions))
