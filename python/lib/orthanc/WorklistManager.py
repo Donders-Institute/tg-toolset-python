@@ -184,8 +184,8 @@ class WorklistManager:
                 # make another SQL query to get user name
                 try:
                     crs1 = conn.cursor()
-                    crs1.execute('SELECT firstName,lastName FROM users where id = \'%s\'' % userId)
-                    (firstName, lastName) = crs.fetchone()
+                    crs1.execute('SELECT firstName,lastName FROM users WHERE id = \'%s\'' % userId)
+                    (firstName, lastName) = crs1.fetchone()
                     userId = '%s %s' % (firstName, lastName)
                 except Exception, e:
                     self.logger.exception('User name select failed: %s' % userId)
