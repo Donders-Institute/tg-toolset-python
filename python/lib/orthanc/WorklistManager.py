@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 from common.Logger import getLogger
 from common.IMySQL import IMySQL
+from common.Shell import Shell
 from datetime import datetime, date, timedelta
 from Cheetah.Template import Template
 import ConfigParser
+import sys
+import os
+import getpass
 
 class WorklistItem(object):
 
@@ -51,7 +55,7 @@ class WorklistItem(object):
 
     def __cmp__(self, other):
         """compare ModalityWorklist by date + time + patientId"""
-        if not isinstance(other, ModalityWorklist):
+        if not isinstance(other, WorklistItem):
             raise NotImplementedError
         return cmp(self.date, other.date) and cmp(self.time, other.time) and cmp(self.patientId, other.patientId)
 
@@ -67,8 +71,18 @@ class WorklistManager:
         :return:
         """
 
-        cfg = ConfigParser.ConfigParser()
+        cfg_defaults = {'pdb_hostname': 'localhost',
+                        'pdb_username': 'test',
+                        'pdb_password': 'guessit',
+                        'pdb_dbname': 'fcdctest',
+                        'dcmtk_setup_cmd': '',
+                        'dcmtk_wlbroker_store': '/scratch/OrthancData/DicomWorklist/WLBROKER'}
+
+        cfg = ConfigParser.ConfigParser(defaults=cfg_defaults)
         cfg.read(config)
+
+        self.dcmtk_setup = cfg.get('PACS','dcmtk_setup_cmd')
+        self.dcmtk_wlbroker_dir = cfg.get('PACS','dcmtk_wlbroker_dir')
         self.logger = getLogger(name=self.__class__.__name__, lvl=int(cfg.get('LOGGING', 'level')))
 
         self.__getDBConnectInfo__(cfg)
@@ -96,6 +110,43 @@ class WorklistManager:
             else: ## for pipeing-in password
                 print 'Project DB password: '
                 self.pdb_pass = sys.stdin.readline().rstrip()
+
+    def makeDicomWorklist(self, eDate=date.today(), worklistStore=''):
+        """
+        make worklist items for DICOM worklist broker
+        :param eDate: the date in which the MR scan is planned
+        :param worklistStore: (optional) the filesystem path in which the DICOM worklist items will be stored.
+                              If it's specified, it replaces the path specified by 'dcmtk_wlbroker_store' in
+                              the config file.
+        :return: a list of filesystem paths to the successfully created worklist items
+        """
+
+        worklistFiles = []
+
+        s = Shell()
+        dump2dcm_cmd = 'dump2dcm'
+        if self.dcmtk_setup:
+            dump2dcm_cmd = '%s; %s' % (self.dcmtk_setup, dump2dcm_cmd)
+
+        if not worklistStore:
+            worklistStore = self.dcmtk_wlbroker_dir
+
+        for wl in self.getWorklistItems(eDate):
+            # save worklist as human-readable (DICOM dump)
+            dump_fpath = os.path.join(worklistStore, '%s.dump' % wl.studyId)
+            f = open( dump_fpath,'w')
+            f.write( str(wl) )
+            f.close()
+
+            # convert DICOM dump to DICOM format
+            dcm_fpath = os.path.join(worklistStore, '%s.dcm' % wl.studyId)
+            rc,output,m = s.cmd1('%s %s %s' % (dump2dcm_cmd, dump_fpath, dcm_fpath))
+            if rc != 0:
+                self.logger.error('DICOM worklist item creation failed: ' % wl.studyId)
+            else:
+                worklistFiles.append(dcm_fpath)
+
+        return worklistFiles
 
     def getWorklistItems(self, eDate=date.today()):
         '''compose worklist items based on booking events retrieved from calendar table in PDB

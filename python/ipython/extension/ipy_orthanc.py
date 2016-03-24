@@ -24,6 +24,17 @@ def unload_ipython_extension(ipython):
 def wklst(line):
     """implements interfaces to WorklistManager"""
 
+    valid_actions = ['show','make']
+    def valid_action(s):
+        if not s:
+            return 'show'
+
+        if s in valid_actions:
+            return s
+        else:
+            msg = "Invalid action: %s" % s
+            raise argparse.ArgumentTypeError(msg)
+
     def valid_date(s):
 
         if not s:
@@ -35,7 +46,21 @@ def wklst(line):
             msg = "Not a valid date: '{0}'.".format(s)
             raise argparse.ArgumentTypeError(msg)
 
+    def valid_dir(s):
+
+        if os.path.isdir(s):
+            return s
+        else:
+            msg = "Invalid filesystem path: %s" % s
+            raise argparse.ArgumentTypeError(msg)
+
     p = argparse.ArgumentParser(description='retrieve DICOM worklist', prog='wklst')
+    p.add_argument('action',
+                   metavar = 'worklist manager action',
+                   dest = 'action',
+                   type = valid_action,
+                   default = 'show',
+                   help = 'specify one of the valid worklist actions: %s' % ','.join(valid_actions))
     p.add_argument('-d',
           metavar = 'date',
           dest    = 'date',
@@ -43,10 +68,26 @@ def wklst(line):
           type    = valid_date,
           default = '',
           help    = 'date in %Y-%m-%d format, e.g. 2016-01-01')
+    p.add_argument('-s',
+          metavar = 'path of worklist store',
+          dest    = 'wl_dir',
+          action  = 'store',
+          type    = valid_dir,
+          default = '/tmp',
+          help    = 'specify the path in which the DICOM worklist are created')
 
     args = p.parse_args(line.split())
 
-    print wlmgr.getWorklistItems(eDate = args.date)
+    if args.action == 'show':
+        print('worklist items for date: %s' % args.date)
+        for wl in wlmgr.getWorklistItems(eDate = args.date):
+            print('%s' % wl)
+    elif args.action == 'make':
+        print('worklist items for date: %s' % args.date)
+        for wl in wlmgr.makeDicomWorklist(eDate = args.date, worklistStore=args.wl_dir):
+            print('%s' % wl)
+    else:
+        pass
 
 def pacs(line):
     """implements interfaces to Orthanc PACS server"""
