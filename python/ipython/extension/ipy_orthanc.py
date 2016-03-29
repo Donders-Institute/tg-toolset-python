@@ -66,7 +66,7 @@ def wklst(line):
           action  = 'store',
           type    = valid_date,
           default = '',
-          help    = 'date in %Y-%m-%d format, e.g. 2016-01-01')
+          help    = 'date in %%Y-%%m-%%d format, e.g. 2016-01-01')
     p.add_argument('-s',
           metavar = 'path of worklist store',
           dest    = 'wl_dir',
