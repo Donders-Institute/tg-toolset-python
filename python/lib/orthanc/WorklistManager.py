@@ -17,14 +17,19 @@ class WorklistItem(object):
         self.projectTitle = projectTitle
         self.subjectId = subjectId
         self.sessionId = 'SESS%s' % sessionId.zfill(2)
-        self.sessionTitle = 'session %s' % sessionId.zfill(2)
+        self.sessionTitle = 'Session %s' % sessionId.zfill(2)
         self.date = date
         self.time = time
         self.physician = physician
-        self.eventId = time.lstrip('0')   # evenId is taken from time with leading zero stripped
+        self.eventId = '%s%s' % (self.date, self.time)   # evenId is taken as combination of date and time
 
         self.modalityAE = scanner
-        self.patientId = '%s_SUBJ%s' % (projectId, subjectId.zfill(4))
+
+        if re.match('^[xX]',subjectId):  # subjectId with leading 'x' or 'X' is considered as an extra subject
+            self.patientId = '%s_XTRA%s' % (projectId, re.sub('^[xX]','',subjectId).zfill(4))
+        else:
+            self.patientId = '%s_SUBJ%s' % (projectId, subjectId.zfill(4))
+
         self.studyId = '%s_S%s' % (projectId, sessionId.zfill(2))
 
     def getWorklistTemplate(self):
@@ -136,13 +141,13 @@ class WorklistManager:
 
         for wl in self.getWorklistItems(eDate):
             # save worklist as human-readable (DICOM dump)
-            dump_fpath = os.path.join(worklistStore, '%s.dump' % wl.studyId)
+            dump_fpath = os.path.join(worklistStore, '%s_%s.dump' % (wl.modalityAE, wl.eventId))
             f = open( dump_fpath,'w')
             f.write( str(wl) )
             f.close()
 
             # convert DICOM dump to DICOM format
-            dcm_fpath = os.path.join(worklistStore, '%s.dcm' % wl.studyId)
+            dcm_fpath = os.path.join(worklistStore, '%s_%s.wl' % (wl.modalityAE, wl.eventId))
             s_cmd = '%s %s %s' % (dump2dcm_cmd, dump_fpath, dcm_fpath)
             self.logger.debug('dump2dcm command: %s' % s_cmd)
             rc,output,m = s.cmd1(s_cmd)
@@ -180,7 +185,7 @@ class WorklistManager:
 
                 scannerAE = m.group(1)
 
-                d = subj_ses.split()
+                d = re.compile('\s*(-)\s*').split(subj_ses)
                 subjectId = d[0]
                 sessionId = d[-1]
 
