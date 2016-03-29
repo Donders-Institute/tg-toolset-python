@@ -1,1 +1,1 @@
-ipython/shell/irdm/bin/irdm.sh
+../ipython/shell/irdm/bin/irdm.sh
