@@ -445,6 +445,11 @@ class IRDMRestful(IRDM):
         self.irods_username = self.config.get('RDM', 'irodsUserName')
         self.irods_password = self.config.get('RDM', 'irodsPassword')
 
+        try:
+            self.irods_rest_servercert = self.config.get('RDM','irods_rest_servercert')
+        except:
+            self.irods_rest_servercert = ''
+
     def login(self):
         """
         perform a simple IRESTful ping with given user credential.  On success, set self.is_user_login to True
@@ -457,6 +462,9 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = 'server'
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
 
         cb = SimpleCallback()
         ick = rest.doGET(cb)
@@ -476,6 +484,9 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = 'collection/%s/%s' % (ns_collection, rel_path)
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
 
         self.logger.debug('listing resource: %s' % rest.resource)
 
@@ -535,6 +546,9 @@ class IRDMRestful(IRDM):
             rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
             rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
             rest.resource = 'collection/%s/%s' % (ns_collection, '/'.join(paths[0:i]))
+            rest.cainfo = self.irods_rest_servercert
+            if not rest.cainfo:
+                rest.ignore_ssl_cert_check = True
 
             self.logger.debug('creating resource: %s' % rest.resource)
 
@@ -551,6 +565,9 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = 'collection/%s/%s' % (ns_collection, rel_path)
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
 
         self.logger.debug('removing resource: %s' % rest.resource)
 
@@ -570,6 +587,9 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = 'dataObject/%s/%s' % (ns_collection, rel_path)
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
 
         self.logger.debug('removing resource: %s' % rest.resource)
 
@@ -587,6 +607,9 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = 'fileContents/%s/%s' % (ns_collection, rel_path)
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
 
         self.logger.debug('downloading resource: %s' % rest.resource)
 
@@ -622,6 +645,10 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = 'collection/%s/%s' % (ns_collection, '/'.join(paths[0:len(paths)-1]))
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
+
         rest.params.append('listType=both')
         rest.params.append('listing=True')
         cb = SimpleCallback()
@@ -652,6 +679,10 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = dest_resource
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
+
         rest.params.append('force=True')
 
         self.logger.debug('uploading to resource: %s' % rest.resource)
@@ -690,6 +721,10 @@ class IRDMRestful(IRDM):
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
         rest.httpBasicAuth(username=self.irods_username, password=self.irods_password)
         rest.resource = 'rule'
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
+
         cb = SimpleCallback()
         ick = rest.doPOST(cb, data=d)
 
@@ -736,6 +771,10 @@ class IRDMRestful(IRDM):
         rest.httpBasicAuth(username=self.config.get('RDM', 'irods_admin_username'),
                            password=self.config.get('RDM', 'irods_admin_password'))
         rest.resource = 'user/%s/temppassword' % irods_username
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
+
         rest.params.append('admin=True')
         cb = SimpleCallback()
         ick = rest.doPUT(cb)
@@ -751,6 +790,9 @@ class IRDMRestful(IRDM):
                            password=self.config.get('RDM', 'irods_admin_password'))
 
         rest.resource = 'collection/%s' % ns_collection
+        rest.cainfo = self.irods_rest_servercert
+        if not rest.cainfo:
+            rest.ignore_ssl_cert_check = True
 
         cb = SimpleCallback()
         ick = rest.doGET(cb)

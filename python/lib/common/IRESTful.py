@@ -112,6 +112,10 @@ class IRESTful:
         self.requestMethod = 'GET'
         self.accept = 'application/json'
         self.contentType = ''
+        self.ssl_verifypeer = 1
+        self.ssl_verifyhost = 2
+        self.cainfo = ''
+        self.ignore_ssl_cert_check = False
 
     def httpBasicAuth(self, username, password):
         """
@@ -163,6 +167,14 @@ class IRESTful:
         c.setopt(c.NOPROGRESS, 0)
         c.setopt(c.PROGRESSFUNCTION, callback.progress_callback)
         c.setopt(c.HTTPHEADER, http_header)
+
+        if self.ignore_ssl_cert_check:
+            c.setopt(c.SSL_VERIFYPEER, 0)
+            c.setopt(c.SSL_VERIFYHOST, 0)
+        else:
+            c.setopt(c.CAINFO, self.cainfo)
+            c.setopt(c.SSL_VERIFYPEER, self.ssl_verifypeer)
+            c.setopt(c.SSL_VERIFYHOST, self.ssl_verifyhost)
 
         return c
 
