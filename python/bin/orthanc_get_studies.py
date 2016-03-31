@@ -135,7 +135,7 @@ if __name__ == "__main__":
     p.add_argument('--stable-only',
                    dest    = 'stable_only',
                    action  = 'store_true',
-                   default = True,
+                   default = False,
                    help    = 'set to show only the studies that are considered "stable" in Orthanc')
 
     args = p.parse_args()
