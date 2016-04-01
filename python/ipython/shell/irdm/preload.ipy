@@ -185,7 +185,9 @@ class MagicRDM(Magics):
 
              iRDM[1]: user attrs [irodsUserName] 
 
-    * edit - edit attributes of the current user profile
+    * edit - edit attributes of current login user, or a given user in the "admin" mode.
+
+             iRDM[1]: user edit [irodsUserName]
 
     * find - find users matching the key-value attribute specified via args.
 
