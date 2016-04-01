@@ -70,8 +70,10 @@ class IRDM:
             'irodsAuthFileName': os.path.join(os.path.expanduser('~'), '.irods/irdm/.irodsA'),
             'irodsSSLCACertificateFile': os.path.dirname(os.path.abspath(__file__)) + '/../ssl/irods-icat_chain.pem'
         }
-
         self.config = ConfigParser.SafeConfigParser(default_cfg)
+
+        if config and os.path.exists(config):
+            self.config.read(config)
 
         # try to overwrite the logging level with the specification in the config file
         try:
@@ -80,9 +82,6 @@ class IRDM:
             pass
 
         self.logger = getLogger(name=self.__class__.__name__, lvl=self.lvl)
-
-        if config and os.path.exists(config):
-            self.config.read(config)
 
         self.is_user_login = False
 
