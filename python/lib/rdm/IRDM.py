@@ -60,7 +60,6 @@ class IRDM:
     def __init__(self, config, lvl=0):
         self.IF_TYPE = None
         self.lvl = lvl
-        self.logger = getLogger(name=self.__class__.__name__, lvl=lvl)
 
         default_cfg = {
             'irods_rest_endpt': 'http://rdmapptst.uci.ru.nl:8080/irods-rest-4.0.2.1-SNAPSHOT/rest',
@@ -73,6 +72,14 @@ class IRDM:
         }
 
         self.config = ConfigParser.SafeConfigParser(default_cfg)
+
+        # try to overwrite the logging level with the specification in the config file
+        try:
+            self.lvl = self.config.get('LOGGING','level')
+        except:
+            pass
+
+        self.logger = getLogger(name=self.__class__.__name__, lvl=self.lvl)
 
         if config and os.path.exists(config):
             self.config.read(config)
@@ -715,7 +722,7 @@ class IRDMRestful(IRDM):
         for k,v in inputs.iteritems():
             d["irodsRuleInputParameters"].append({"name": "%s" % '*'+k, "value": "%s" % str(v).replace('%','&#37;')});
 
-        print('%s' % repr(d))
+        self.logger.debug('rule data: %s' % repr(d))
 
         ## run RESTful POST
         rest = IRESTful(self.config.get('RDM', 'irods_rest_endpt'), lvl=self.lvl)
