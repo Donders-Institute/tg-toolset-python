@@ -75,7 +75,7 @@ class IRDM:
 
         # try to overwrite the logging level with the specification in the config file
         try:
-            self.lvl = self.config.get('LOGGING','level')
+            self.lvl = int(self.config.get('LOGGING','level'))
         except:
             pass
 
