@@ -231,6 +231,11 @@ class MagicRDM(Magics):
                                help    = 'the irods user name')
                 args = p.parse_args(l_data[1:])
 
+                # require admin mode for editing user not the same as the current client
+                if args.user != _rdm_mystate.cur_user and not _rdm_mystate.is_admin_mode:
+                    print('user not in admin mode: run "mode admin" first')
+                    return False
+
                 # lookup editor from cache or create new editor
                 ues = filter(lambda x:x.target['irodsUserName'] == args.user, _rdm_mystate.user_editors)
 
