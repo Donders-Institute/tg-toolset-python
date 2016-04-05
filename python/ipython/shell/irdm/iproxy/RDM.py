@@ -170,6 +170,7 @@ class RDM(Configurable):
 
         if _my_coll:
             get_ipython().user_ns['_rdm_mystate'].cur_coll = _my_coll[0][2]
+            get_ipython().user_ns['_rdm_mystate'].cur_coll_path = ''
 
             if type(self.rdm) is IRDMIcommand:
                 ## determine iRODS namespace to move the underlying shell
@@ -185,11 +186,12 @@ class RDM(Configurable):
         """ move to the top-level namespace of iRODS
         :return:
         """
+        get_ipython().user_ns['_rdm_mystate'].cur_coll = ''
+        get_ipython().user_ns['_rdm_mystate'].cur_coll_path = ''
+
         if type(self.rdm) is IRDMIcommand:
             self.rdm.shell.cmd1('icd')
             self.rdm.admin_shell.cmd1('icd')
-        else:
-            pass
 
     def coll_list(self):
         """ list collections
@@ -207,16 +209,41 @@ class RDM(Configurable):
         """
 
         _coll_name = self.__get_curr_coll_name__()
+        _coll_path = get_ipython().user_ns['_rdm_mystate'].cur_coll_path
 
         ## make it absolute path
         if not os.path.isabs(path):
-            cwd = self.rdm.__exec_shell_cmd__('ipwd', admin=self.__is_admin_mode__())
-            path = os.path.abspath(os.path.join(cwd, path))
+            path = os.path.abspath(os.path.join(os.path.join(_coll_name, _coll_path), path))
        
         if path.find(_coll_name) != 0:
                 raise ValueError('cannot move outside current collection, goto another collection first')
 
-        self.icommand_run('icd %s' % path)
+        if type(self.rdm) is IRDMIcommand:
+            self.icommand_run('icd %s' % path)
+        else:
+            # TODO: try to probe the existence of the path with IRDMRestful
+            pass
+
+        get_ipython().user_ns['_rdm_mystate'].cur_coll_path = path.replace(_coll_name, '').lstrip('/')
+
+    def coll_ls(self):
+        """list current path within current collection"""
+        _coll_name = self.__get_curr_coll_name__()
+        _coll_path = get_ipython().user_ns['_rdm_mystate'].cur_coll_path
+
+        return self.rdm.ls(_coll_name, _coll_path, recursive=False)
+
+    def coll_mkdir(self, rel_path):
+        """recursively make directories relative to the current path within current collection"""
+
+        if os.path.isabs(rel_path):
+            self.logger.error('not a relative path: %s' % rel_path)
+            return False
+
+        _coll_name = self.__get_curr_coll_name__()
+        _coll_path = get_ipython().user_ns['_rdm_mystate'].cur_coll_path
+
+        return self.rdm.mkdir(_coll_name, os.path.join(_coll_path, rel_path))
 
     def coll_get(self):
         """get current collection object"""

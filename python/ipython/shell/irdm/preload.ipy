@@ -143,7 +143,7 @@ class MagicRDM(Magics):
 
     @line_magic
     def icd(self, line):
-        """change work directory in the current collection
+        """change current working directory in a RDM collection
 
     usage: icd [<directory>]
         """
@@ -151,27 +151,49 @@ class MagicRDM(Magics):
 
     @line_magic
     def ipwd(self, line):
-        "print current iRODS namespace"
-        return self.rdm.icommand_run('ipwd')
+        "print current working directory (a.k.a. iRODS namespace) of the RDM system"
+        _pwd = ''
+        try:
+            _cur_coll = self.rdm.__get_curr_coll_name__()
+            _pwd = os.path.join(_cur_coll, _rdm_mystate.cur_coll_path)
+        except ValueError:
+            pass
+        print(_pwd)
 
     @line_magic
     def ils(self, line):
-        "list files/directories in a collection"
-        return self.rdm.icommand_run('ils %s' % line)
+        "list files/directories within the current working directory of the RDM system"
+        for f in self.rdm.coll_ls():
+            print(f)
 
     @line_magic
     def imkdir(self, line):
-        "create directories in a collection"
-        return self.rdm.icommand_run('imkdir %s' % line)
+        "create directories within the current working directory of the RDM system"
+
+        p = argparse.ArgumentParser(description='create directories', prog='imkdir')
+        p.add_argument('rel_path',
+                        metavar = 'rel_path',
+                        nargs   = '+',
+                        help    = 'name of path relative to the current working directory of the RDM system')
+
+        # print the ArgumentParser help
+        if not line:
+            p.print_help()
+            return False
+
+        args = p.parse_args(line.split())
+
+        for d in args.rel_path:
+            self.rdm.coll_mkdir(d)
 
     @line_magic
     def iput(self, line):
-        "put file into a collection"
+        "upload a file into the current working directory of the RDM system"
         return self.rdm.icommand_run('iput %s' % line)
 
     @line_magic
     def iget(self, line):
-        "get file from a collection"
+        "download a file from the current working directory of the RDM system"
         return self.rdm.icommand_run('iget %s' % line)
 
     @line_magic

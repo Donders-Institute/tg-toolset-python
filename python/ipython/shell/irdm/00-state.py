@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 class RDMState(object):
     '''a state object caching current client status'''
-    cur_user = ""
-    cur_coll = ""
+    cur_user = ''
+    cur_coll = ''
+    cur_coll_path = ''
     is_user_login = False
     is_admin_mode = False
     my_colls = []
@@ -27,6 +28,7 @@ class RDMState(object):
 
     def flush(self):
         self.cur_coll = ''
+        self.cur_coll_path = ''
         self.my_colls = []
         self.user_editors = []
         self.coll_editors = []
@@ -41,12 +43,16 @@ class RDMState(object):
         return _id
 
     def __shell_prompt__(self):
+        path_info = self.cur_coll_identifier()
+        if self.cur_coll_path:
+            path_info += '/%s' % self.cur_coll_path
+
         if not self.is_user_login:
-            return '{color.LightRed}['+ self.cur_user + '@' + self.cur_coll_identifier() + ']\niRDM[\\N]: '
+            return '{color.LightRed}['+ self.cur_user + '@' + path_info + ']\niRDM[\\N]: '
         elif self.is_admin_mode:
-            return '{color.Purple}['+ self.cur_user + '@' + self.cur_coll_identifier() + '][ADMIN]\niRDM[\\N]: '
+            return '{color.Purple}['+ self.cur_user + '@' + path_info + '][ADMIN]\niRDM[\\N]: '
         else:
-            return '{color.Green}['+ self.cur_user + '@' + self.cur_coll_identifier() + ']\niRDM[\\N]: '
+            return '{color.Green}['+ self.cur_user + '@' + path_info + ']\niRDM[\\N]: '
 
     def __str__(self):
             return self.cur_user + '@' + self.cur_coll_identifier()

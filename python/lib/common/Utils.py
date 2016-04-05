@@ -30,6 +30,16 @@ def inputPassword(prompt="password"):
 
     return passwd
 
+def sizeof_fmt(num, suffix='B'):
+    """
+    convert bytes into human-readable format
+    """
+    for unit in ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z']:
+        if abs(num) < 1000.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1000.0
+    return "%.1f%s%s" % (num, 'Y', suffix)
+
 def makeAttributeValueTable(title, data, attrs_to_show=[]):
     """ make a table for attribute-value pairs of a JSON object
     """

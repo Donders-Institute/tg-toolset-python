@@ -4,12 +4,13 @@ import json
 import os
 import re
 import pexpect
+from datetime import datetime
 from sets import Set
 from tempfile import NamedTemporaryFile
 from common.Logger import getLogger
 from common.IRESTful import IRESTful, SimpleCallback, FileIOCallback
 from common.Shell import Shell
-from common.Utils import inputPassword
+from common.Utils import inputPassword, sizeof_fmt
 
 class IRDMException(Exception):
     """
@@ -34,7 +35,6 @@ class ICommandError(IRDMException):
         self.out = out
         self.msg = '"%s" failed with exit code: %d\n' % (self.cmd, self.ec)
 
-
 class IrodsFile:
     """
     data object of iRODS file (more precisely the iRODS data object)
@@ -50,8 +50,12 @@ class IrodsFile:
         return cmp(os.path.join(self.COLL_NAME, self.DATA_NAME), os.path.join(other.COLL_NAME, other.DATA_NAME))
 
     def __repr__(self):
-        return repr(self.__dict__)
 
+        _ftype = ''
+        if self.TYPE == 'COLLECTION':
+            _ftype = 'D'
+
+        return '{!s:19} {!s:>8} {:1} {}'.format(datetime.fromtimestamp(self.MODIFY_TIME / 1000), sizeof_fmt(self.SIZE), _ftype, self.PATH)
 
 class IRDM:
     """
