@@ -31,4 +31,15 @@ if [ -z $USERID ]; then
     USERID=$USER
 fi
 
-ldapsearch -LLL -h dccn-w001.dccn.nl -D 'CN=ldapbind,OU=Functional Users and Groups,OU=dccn,DC=dccn,DC=nl' -W -b 'OU=dccn,DC=dccn,DC=nl' "(&(sAMAccountName=${USERID}))" ${ATTR}
+# composing common name for binding user for this search
+bind_user="CN=ldapbind,OU=Functional Users and Groups,OU=dccn,DC=dccn,DC=nl"
+uinfo=$( getent passwd | grep ${USER} )
+
+if [ $? -eq 0 ]; then
+    uname=$( echo ${uinfo} | awk -F ':' '{print $5}' )
+    gname=$( echo ${uinfo} | awk -F ':' '{print $6}' | awk -F '/' '{print $(NF-1)}' )
+    bind_user="CN=${uname},OU=${gname},OU=dccn,DC=dccn,DC=nl"
+fi
+
+echo "searching by user: ${bind_user} for user ${USERID}"
+ldapsearch -LLL -h dccn-w001.dccn.nl -D "${bind_user}" -W -b 'OU=dccn,DC=dccn,DC=nl' "(&(sAMAccountName=${USERID}))" ${ATTR}
