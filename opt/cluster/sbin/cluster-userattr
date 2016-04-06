@@ -9,7 +9,7 @@ while getopts "ha:u:" option; do
     case $option in
         h)
             # -h: displays help message
-            echo "Usage: cluster-get-userattr [-a <attribute>] [-u <userid>]"
+            echo "Usage: cluster-userattr [-a <attribute>] [-u <userid>]"
             exit 0
             ;;
         a)
