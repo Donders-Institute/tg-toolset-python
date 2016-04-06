@@ -1,0 +1,34 @@
+#!/bin/bash
+
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# this part does the checking of the command line arguments
+
+while getopts "ha:u:" option; do
+
+    case $option in
+        h)
+            # -h: displays help message
+            echo "Usage: cluster-get-userattr [-a <attribute>] [-u <userid>]"
+            exit 0
+            ;;
+        a)
+            ATTR=$OPTARG
+            ;;
+        u)
+            USERID=$OPTARG
+            ;;
+        \?)
+            # invalid options
+            echo "Invalid option -${option}" >&2
+            ;;
+    esac
+done
+
+shift $(($OPTIND - 1))
+
+if [ -z $USERID ]; then
+    USERID=$USER
+fi
+
+ldapsearch -LLL -h dccn-w001.dccn.nl -D 'CN=ldapbind,OU=Functional Users and Groups,OU=dccn,DC=dccn,DC=nl' -W -b 'OU=dccn,DC=dccn,DC=nl' "(&(sAMAccountName=${USERID}))" ${ATTR}
