@@ -28,7 +28,7 @@ class RDM(Configurable):
     # configuration for collection attribute display
     coll_displayed_dattrs = List(['collectionIdentifier','identifierEPIC','identifierDOI','versionNumber','collName','title','descriptionAbstract','type','state','publisher','organisation','organisationalUnit','projectId','manager','contributor','viewer','contactPerson','creatorList','keyword_freetext','keyword_MeSH2015','keyword_SFN2013','associatedDAC','associatedRDC','associatedDSC','associatedPublication','ethicalApprovalIdentifier','creationDateTime','attributeLastUpdatedDateTime','embargoUntilDateTime','dataUseAgreement'], config=True)
 
-    user_displayed_dattrs = List(['displayName','givenName','surName','email','homeOrganisation','organisationalUnit','isAdminOf','researcherId','openResearcherAndContributorId','personalWebsiteUrl'])
+    user_displayed_dattrs = List(['displayName','givenName','surName','email','homeOrganisation','organisationalUnit','isAdminOf','researcherId','openResearcherAndContributorId','personalWebsiteUrl'], config=True)
 
     def __init__(self, config=None):
         super(RDM, self).__init__(config=config)
