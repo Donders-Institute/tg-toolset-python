@@ -189,12 +189,32 @@ class MagicRDM(Magics):
     @line_magic
     def iput(self, line):
         "upload a file into the current working directory of the RDM system"
-        return self.rdm.icommand_run('iput %s' % line)
+
+        p = argparse.ArgumentParser(description='upload a file into the current working directory of the RDM system', prog='iput')
+        p.add_argument('file_path',
+                        metavar = 'file_path',
+                        nargs   = '+',
+                        help    = 'local file path')
+
+        args = p.parse_args(line.split())
+
+        for f in args.file_path:
+            self.rdm.coll_data_put(f, '')
 
     @line_magic
     def iget(self, line):
         "download a file from the current working directory of the RDM system"
-        return self.rdm.icommand_run('iget %s' % line)
+
+        p = argparse.ArgumentParser(description='upload a file into the current working directory of the RDM system', prog='iput')
+        p.add_argument('file_path',
+                        metavar = 'file_path',
+                        nargs   = '+',
+                        help    = 'remote file path')
+
+        args = p.parse_args(line.split())
+
+        for f in args.file_path:
+            self.rdm.coll_data_get(f, '')
 
     @line_magic
     def user(self, line):

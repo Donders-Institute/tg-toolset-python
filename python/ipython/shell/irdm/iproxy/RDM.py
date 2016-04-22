@@ -260,6 +260,55 @@ class RDM(Configurable):
 
         return out['collection']
 
+    def coll_data_put(self, source_fpath, dest_fpath=''):
+        """ put single data object (file) to the present working directory """
+
+        # check availability of source file path
+        if not os.path.isfile(source_fpath):
+            self.logger.error('file not found: %s' % source_fpath)
+            return False
+
+        _coll_name = self.__get_curr_coll_name__()
+
+        # get the present working directory within iRODS
+        _rdm_pwd = os.path.join(_coll_name, get_ipython().user_ns['_rdm_mystate'].cur_coll_path)
+
+        # resolve destination file path
+        if not dest_fpath:
+            dest_fpath = os.path.join(_rdm_pwd, os.path.basename(source_fpath))
+        elif not os.path.isabs(dest_fpath):
+            dest_fpath = '%s/%s' % (_rdm_pwd, dest_fpath)
+        else:
+            pass
+
+        return self.rdm.put(source_fpath, _coll_name, os.path.relpath(dest_fpath, _coll_name), show_progress=True)
+
+    def coll_data_get(self, source_fpath, dest_fpath=''):
+        """ get single data object (file) """
+
+        _coll_name = self.__get_curr_coll_name__()
+
+        # get the present working directory within iRODS
+        _rdm_pwd = os.path.join(_coll_name, get_ipython().user_ns['_rdm_mystate'].cur_coll_path)
+
+        # resolve source file path
+        if not os.path.isabs(source_fpath):
+            source_fpath = os.path.abspath('%s/%s' % (_rdm_pwd, source_fpath))
+
+        # check if source file path is inside the collection namespace
+        if not re.match('^%s' % _coll_name, source_fpath):
+            raise ValueError('path not in namespace of current collection: %s' % source_fpath)
+
+        # resolve dest_fpath
+        if not dest_fpath:
+            dest_fpath = os.path.join(os.getcwd(), os.path.basename(source_fpath))
+        elif not os.path.isabs(dest_fpath):
+            dest_fpath = os.path.abspath('%s/%s' % (os.getcwd(), dest_fpath))
+        else:
+            pass
+
+        return self.rdm.get(_coll_name, os.path.relpath(source_fpath, _coll_name), dest_fpath, show_progress=True)
+
     def coll_attrs(self):
         """ get list of collection attributes
         """
