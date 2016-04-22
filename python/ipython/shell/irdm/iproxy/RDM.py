@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 from __future__ import print_function
-#from IPython.config.configurable import Configurable
-#from IPython.utils.traitlets import Bool, List, Int, Unicode
-from traitlets.config.configurable import Configurable
-from traitlets import List, Int, Unicode
+try:
+    # for IPython4
+    from traitlets.config.configurable import Configurable
+    from traitlets import List, Int, Unicode
+except ImportError:
+    # backward compatible with IPython3 
+    from IPython.config.configurable import Configurable
+    from IPython.utils.traitlets import Bool, List, Int, Unicode
 from IPython import get_ipython
 
 import sys
