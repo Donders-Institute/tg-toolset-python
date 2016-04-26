@@ -53,7 +53,7 @@ class FileIOCallback(SimpleCallback):
         re_cnt_length = re.compile(r'Content-Length:\s+([0-9]*)$')
         m = re_cnt_length.match(buf.strip())
         if m:
-            self.content_length = int(m.group(1))
+            self.content_length = long(m.group(1))
 
     def body_callback(self, buf):
         if self.mode == 'download':
