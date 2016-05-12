@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from argparse import ArgumentParser
-import hashlib
+import argparse
 
 import os
 import sys
@@ -8,13 +7,14 @@ import time
 import datetime
 import tempfile
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__))+'/../lib/external')
-sys.path.append(os.path.dirname(os.path.abspath(__file__))+'/../lib')
-from Logger import getLogger
-from IOrthanc import IOrthanc
-from IRDM import IRDMRestful, IRDMIcommand, IRDMException
-from MTRunner import MTRunner, Algorithm, Data
+sys.path.append('%s/external' % os.environ['DCCN_PYTHONDIR'])
+sys.path.append('%s/lib' % os.environ['DCCN_PYTHONDIR'])
 
+from orthanc.IOrthanc import IOrthanc
+from rdm.IRDM import IRDMRestful, IRDMIcommand, IRDMException
+from common.Logger import getLogger
+
+from MTRunner import MTRunner, Algorithm, Data
 
 class DataStreamingAlgorithm(Algorithm):
 
@@ -24,7 +24,7 @@ class DataStreamingAlgorithm(Algorithm):
         self.rdm_datadir_rel = 'raw'
         self.rdm_imode = 'icommands'
         self.irdm = None
-        self.config = os.path.dirname(os.path.abspath(__file__)) + '/../etc/config.ini'
+        self.config = '%s/config/rdm-upload-dicom-studies.ini' % os.environ['DCCN_PYTHONDIR']
 
     def update_progress(self, progress):
         print '\r[{0}] {1}%'.format('#'*(progress/10), progress)
@@ -120,7 +120,15 @@ class DataStreamer(MTRunner):
 
 if __name__ == "__main__":
 
-    parg = ArgumentParser(description='get data archive of a study from Orthac PACS server')
+    # command-line argument validators
+    def valid_path(s):
+        if os.path.isfile(s):
+            return s
+        else:
+            msg = "Invalid filesystem path: %s" % s
+            raise argparse.ArgumentTypeError(msg)
+
+    parg = argparse.ArgumentParser(description='get data archive of a study from Orthac PACS server')
 
     ## positional arguments
     parg.add_argument('id',
@@ -129,17 +137,12 @@ if __name__ == "__main__":
                       help    = 'Orthanc ID of a study')
 
     ## optional arguments
-    parg.add_argument('--host_pacs',
+    parg.add_argument('--config',
                       action  = 'store',
-                      dest    = 'host_pacs',
-                      default = 'pl-torque.dccn.nl',
-                      help    = 'specify the host of the Orthanc PACS server')
-
-    parg.add_argument('--port_pacs',
-                      action  = 'store',
-                      dest    = 'port_pacs',
-                      default = 8042,
-                      help    = 'specify the port of the Orthanc PACS server')
+                      dest    = 'config',
+                      type=valid_path,
+                      default='%s/config/rdm-upload-dicom-studies.ini' % os.environ['DCCN_PYTHONDIR'],
+                      help    = 'specify the configuration file for connecting the DI-RDM and DICOM PACS servers')
 
     parg.add_argument('--rdm_imode',
                       action  = 'store',
@@ -151,8 +154,8 @@ if __name__ == "__main__":
     parg.add_argument('--rdm_coll_ns',
                       action  = 'store',
                       dest    = 'rdm_coll_ns',
-                      default = '/rdm-tst/di/dccn/dac_t00001',
-                      help    = 'specify the destination RDM collection namespace, e.g. /rdm-tst/di/dccn/dac_t00001')
+                      default = '/rdm/di/dccn/DAC_3010000.01_313',
+                      help    = 'specify the destination RDM collection namespace, e.g. /rdm/di/dccn/DAC_3010000.01_313')
 
     parg.add_argument('--rdm_datadir_rel',
                       action  = 'store',
@@ -160,17 +163,11 @@ if __name__ == "__main__":
                       default = 'raw',
                       help    = 'specify the destination data directory relative to the RDM collection namespace, e.g. ./raw')
 
-    parg.add_argument('--config',
-                      action = 'store',
-                      dest   = 'config',
-                      default = os.path.dirname(os.path.abspath(__file__)) + '/../etc/config.ini',
-                      help   = 'specify the configuration file (see etc/config.ini as example)')
-
     args = parg.parse_args()
 
     logger = getLogger(name=os.path.basename(__file__), lvl=3)
 
-    o = IOrthanc(host=args.host_pacs, port=args.port_pacs)
+    o = IOrthanc(config=args.config)
 
     logger.debug('downloading archive of %d study(ies) ...' % len(args.id))
 
