@@ -144,24 +144,24 @@ if __name__ == "__main__":
                       default='%s/config/rdm-upload-dicom-studies.ini' % os.environ['DCCN_PYTHONDIR'],
                       help    = 'specify the configuration file for connecting the DI-RDM and DICOM PACS servers')
 
-    parg.add_argument('--rdm_imode',
+    parg.add_argument('--rdm-imode',
                       action  = 'store',
                       dest    = 'rdm_imode',
                       choices = ['icommands','restful'],
                       default = 'icommands',
-                      help    = 'specify the iRODS client interface for RDM')
+                      help    = 'specify the iRODS client interface for RDM.  Supported interfaces are "icommands" and "restful"')
 
-    parg.add_argument('--rdm_coll_ns',
+    parg.add_argument('--rdm-coll-ns',
                       action  = 'store',
                       dest    = 'rdm_coll_ns',
                       default = '/rdm/di/dccn/DAC_3010000.01_313',
                       help    = 'specify the destination RDM collection namespace, e.g. /rdm/di/dccn/DAC_3010000.01_313')
 
-    parg.add_argument('--rdm_datadir_rel',
+    parg.add_argument('--rdm-datadir-rel',
                       action  = 'store',
                       dest    = 'rdm_datadir_rel',
                       default = 'raw',
-                      help    = 'specify the destination data directory relative to the RDM collection namespace, e.g. ./raw')
+                      help    = 'specify the destination data directory relative to the RDM collection namespace.  For example, if the value is "raw" and collection namespace is "/rdm/di/dccn/DAC_3010000.01_313, the DICOM studies will be stored in "/rdm/di/dccn/DAC_3010000.01_313/raw".')
 
     args = parg.parse_args()
 
