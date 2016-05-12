@@ -43,8 +43,6 @@ class DataStreamingAlgorithm(Algorithm):
 
         #dest_fpath = os.path.join(tempfile.gettempdir(), 's_%s_%s.zip' % (study.MainDicomTags.StudyTime, study.ID))
 
-        print study
-
         dest_fpath = os.path.join(tempfile.gettempdir(), 's_%s_%s.zip' % (study.MainDicomTags.StudyDescription, study.MainDicomTags.StudyTime))
 
         profile = {'time_profile': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
