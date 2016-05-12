@@ -29,6 +29,15 @@ def show_studies(studies):
     t = makeTabular('', data, d_keys, t_keys, '\n')
     print(t.table.encode('utf-8'))
 
+def list_studies(studies):
+    """ list ids of studies
+    :param studies: a list of OrthancDicomMetadata objects, each contains metadata of a DICOM study
+    :return:
+    """
+
+    for s in studies:
+        print(s.ID)
+
 def download_studies(iorthanc, studies, basedir, show_progress=False, mk_checksum=False):
     """ download archives for DICOM studies
     :param iorthanc: the IOrthanc interface object
@@ -76,7 +85,7 @@ if __name__ == "__main__":
             msg = "Not a valid date: '{0}'.".format(s)
             raise argparse.ArgumentTypeError(msg)
 
-    valid_actions = ['show','download']
+    valid_actions = ['show','download','list']
     def valid_action(s):
         if not s:
             return 'show'
@@ -162,5 +171,7 @@ if __name__ == "__main__":
 
     if args.action == 'show':
         show_studies(studies)
+    elif args.action == 'list':
+        list_studies(studies)
     elif args.action == 'download':
         download_studies(iorthanc, studies, args.store_dir)
