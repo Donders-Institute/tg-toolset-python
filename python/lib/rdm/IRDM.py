@@ -846,7 +846,11 @@ class IRDMIcommand(IRDM):
 
     def login(self):
         # initiate the embedded admin Shell with env. setup for iCommands
-        self.admin_shell = self.__getShell__(admin=True)
+        try:
+            self.admin_shell = self.__getShell__(admin=True)
+        except Exception,e:
+            self.logger.warn('rods_admin not logged in, not harmful for regular user')
+
         # initiate the embedded Shell with env. setup for iCommands
         self.shell = self.__getShell__()
         self.is_user_login = True
@@ -1255,6 +1259,7 @@ class IRDMIcommand(IRDM):
         f.close()
    
         if os.path.exists(myAuthfile) and authCached and not admin:
+            self.logger.debug('skip iRODS login, using existing credential: %s' % myAuthfile)
             pass
         else:
 
