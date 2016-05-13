@@ -3,13 +3,10 @@ import argparse
 
 import os
 import sys
-import time
-import datetime
-import tempfile
 
 sys.path.append('%s/external' % os.environ['DCCN_PYTHONDIR'])
 sys.path.append('%s/lib' % os.environ['DCCN_PYTHONDIR'])
-from rdm.IRDM import IRDMRestful, IRDMIcommand, IRDMException
+from rdm.IRDM import IRDMIcommand
 from common.Logger import getLogger
 
 if __name__ == "__main__":
@@ -48,7 +45,6 @@ if __name__ == "__main__":
     args = parg.parse_args()
     logger = getLogger(name=os.path.basename(__file__), lvl=3)
 
-
     ## initialize the IRDM interface
     irdm = None
     rdmUserName = None
@@ -56,12 +52,13 @@ if __name__ == "__main__":
         irdm = IRDMIcommand(args.config, lvl=3)
         rdmUserName = irdm.config.get('RDM', 'irodsUserName')
     else:
-        irdm = IRDMRestful(args.config, lvl=3)
-        rdmUserName = irdm.irods_username
+        ## TODO: is it logical to renew the authtoken for restful or other HTTP-based interfaces?
+        #irdm = IRDMRestful(args.config, lvl=3)
+        #rdmUserName = irdm.irods_username
+        raise NotImplementedError('authtoken renew for interface %s not implemented.' % args.rdm_imode)
 
     ## when using OTP, retrieve the fresh one-time password and apply it to the next login attempt
     if args.use_otp:
-        ## TODO: need a better way to organise irods rules for RDM client
         rule_fpath = os.path.join(os.environ['IRDM_RULE_PREFIX'],'getUserNextHOTP.r')
         out = irdm.__rdm_exec_rule__(irule_script=rule_fpath, inputs={'userName': rdmUserName})
 
