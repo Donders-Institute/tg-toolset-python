@@ -62,7 +62,7 @@ if __name__ == "__main__":
     ## when using OTP, retrieve the fresh one-time password and apply it to the next login attempt
     if args.use_otp:
         ## TODO: need a better way to organise irods rules for RDM client
-        rule_fpath = '%s/lib/rdm/rules/getUserNextHOTP.r' % os.environ['DCCN_PYTHONDIR']
+        rule_fpath = os.path.join(os.environ['IRDM_RULE_PREFIX'],'getUserNextHOTP.r')
         out = irdm.__rdm_exec_rule__(irule_script=rule_fpath, inputs={'userName': rdmUserName})
 
         if out['ec'] == 0:

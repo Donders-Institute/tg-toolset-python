@@ -67,7 +67,7 @@ class RDM(Configurable):
         if not irodsUserName:
             irodsUserName = self.rdm.config.get('RDM', 'irodsUserName')
 
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/getUser.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'getUser.r')
         inputs = {'userName': irodsUserName}
 
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=self.__is_admin_mode__())
@@ -93,7 +93,7 @@ class RDM(Configurable):
         :param clause: the clause for matching user profile
         :return:
         """
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/findUser.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'findUser.r')
         inputs = {'kv_str': clause}
 
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=True)
@@ -127,7 +127,7 @@ class RDM(Configurable):
         :return: the 'ec' and 'errmsg' tuple returned from the 'updateUserProfile.r' iRODS rule
         """
 
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/updateUserProfile.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'updateUserProfile.r')
 
         inputs = {'kv_str': ('irodsUserName=' + irodsUserName + '%' + kv_str.decode('utf-8')).encode('utf-8')}
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=False)
@@ -151,7 +151,7 @@ class RDM(Configurable):
     def user_nextotp(self):
         """ get user's next one-time password 
         """
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/getUserNextHOTP.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'getUserNextHOTP.r')
         inputs = {'userName': self.rdm.config.get('RDM', 'irodsUserName')}
 
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=False)
@@ -255,7 +255,7 @@ class RDM(Configurable):
         """get current collection object"""
 
         _coll_name = self.__get_curr_coll_name__()
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/getCollection.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'getCollection.r')
         inputs = {'kv_str': str('collName=%s' % _coll_name)}
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=False)
 
@@ -359,7 +359,7 @@ class RDM(Configurable):
 
         _coll_name = self.__get_curr_coll_name__()
 
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/updateCollectionMetadata.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'updateCollectionMetadata.r')
 
         inputs = {'kv_str': ('collName=' + _coll_name + '%' + kv_str.decode('utf-8')).encode('utf-8')}
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=False)
@@ -372,7 +372,7 @@ class RDM(Configurable):
         :param kv_str: the string representation of key-value pairs
         :return: the 'ec', 'errmsg' and 'collection' tuple returned from the 'createCollection.r' iRODS rule
         """
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/createCollection.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'createCollection.r')
         inputs = {'kv_str': kv_str}
         out = self.rdm.__rdm_exec_rule__(rule_script, inputs, admin=False)
 
@@ -416,7 +416,7 @@ class RDM(Configurable):
         """ internal method to get a list of collecitons using irule
         """
 
-        rule_script = os.environ['IRDM_PREFIX'] + '/rules/getListOfCollections.r'
+        rule_script = os.path.join(os.environ['IRDM_RULE_PREFIX'], 'getListOfCollections.r')
 
         # determin the mode
         mode = 'user'
