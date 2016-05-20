@@ -160,6 +160,11 @@ if __name__ == "__main__":
     studies = []
     for s in iorthanc.getStudies(last_update_range=[t_beg, t_end], stableOnly=args.stable_only):
 
+
+        # exclude "service" scanns
+        if "(null)" in [s.MainDicomTags.StudyDate, s.MainDicomTags.StudyID, s.MainDicomTags.StudyTime]:
+            continue
+
         patient = iorthanc.__getPatientMetadata__('patients/%s' % s.ParentPatient)
 
         if not re_patient_name.match(patient.MainDicomTags.PatientName):
