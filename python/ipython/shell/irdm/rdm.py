@@ -47,7 +47,7 @@ c.RDM.irods_iftype = 'restful'
 #   - tab_coll_dattrs: collection (irods) attributes mapped to each colume of the table
 c.RDM.tab_coll_header = ['identifier', 'v:2', 'title:25', 'state', 'managers', 'contributors', 'viewers']
 c.RDM.tab_coll_dattrs = ['collectionIdentifier', 'versionNumber', 'title', 'state', 'manager.displayName', 'contributor.displayName', 'viewer.displayName']
-c.RDM.coll_displayed_dattrs = ['collectionIdentifier','identifierEPIC','identifierDOI','versionNumber','collName','title','descriptionAbstract','type','state','publisher','organisation','organisationalUnit','projectId','manager','contributor','viewer','contactPerson','creatorList','keyword_freetext','keyword_MeSH_2015','keyword_SFN_2013','associatedDAC','associatedRDC','associatedDSC','associatedPublication','ethicalApprovalIdentifier','creationDateTime','attributeLastUpdatedDateTime','embargoUntilDateTime','dataUseAgreement']
+c.RDM.coll_displayed_dattrs = ['collectionIdentifier','identifierEPIC','identifierDOI','versionNumber','collName','title','descriptionAbstract','type','state','publisher','organisation','organisationalUnit','projectId','manager','contributor','viewer','creatorList','keyword_freetext','keyword_MeSH_2015','keyword_SFN_2013','associatedDAC','associatedRDC','associatedDSC','associatedPublication','ethicalApprovalIdentifier','creationDateTime','attributeLastUpdatedDateTime','embargoUntilDateTime','dataUseAgreement']
 
 # tabular display for list of user profiles: 
 #   - tab_user_header: header names of the table, the number following ':' specifies max. colume width
