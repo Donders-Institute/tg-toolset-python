@@ -32,7 +32,7 @@ class RDM(Configurable):
     tab_user_dattrs = List(['displayName', 'homeOrganisation', 'organisationalUnit', 'isAdminOf', 'irodsUserName'], config=True)
 
     # configuration for collection attribute display
-    coll_displayed_dattrs = List(['collectionIdentifier','identifierEPIC','identifierDOI','versionNumber','collName','title','descriptionAbstract','type','state','publisher','organisation','organisationalUnit','projectId','manager','contributor','viewer','contactPerson','creatorList','keyword_freetext','keyword_MeSH2015','keyword_SFN2013','associatedDAC','associatedRDC','associatedDSC','associatedPublication','ethicalApprovalIdentifier','creationDateTime','attributeLastUpdatedDateTime','embargoUntilDateTime','dataUseAgreement'], config=True)
+    coll_displayed_dattrs = List(['collectionIdentifier','identifierEPIC','identifierDOI','versionNumber','collName','title','descriptionAbstract','type','state','publisher','organisation','organisationalUnit','projectId','manager','contributor','viewer','creatorList','keyword_freetext','keyword_MeSH2015','keyword_SFN2013','associatedDAC','associatedRDC','associatedDSC','associatedPublication','ethicalApprovalIdentifier','creationDateTime','attributeLastUpdatedDateTime','embargoUntilDateTime','dataUseAgreement'], config=True)
 
     user_displayed_dattrs = List(['displayName','givenName','surName','email','homeOrganisation','organisationalUnit','isAdminOf','researcherId','openResearcherAndContributorId','personalWebsiteUrl'], config=True)
 
@@ -339,10 +339,10 @@ class RDM(Configurable):
                     nv.append('%s (%s)' % (v['displayName'],v['irodsUserName']))
                 data[k] = nv
 
-        if data['contactPerson']:
-            v = data['contactPerson']
-            nv = '%s (%s, mailto:%s)' % (v['displayName'], v['irodsUserName'], v['email'])
-            data['contactPerson'] = nv
+        #if data['contactPerson']:
+        #    v = data['contactPerson']
+        #    nv = '%s (%s, mailto:%s)' % (v['displayName'], v['irodsUserName'], v['email'])
+        #    data['contactPerson'] = nv
 
         ## make a nice-looking table 
         t = makeAttributeValueTable('', data, attrs_to_show=self.coll_displayed_dattrs)
