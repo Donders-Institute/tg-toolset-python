@@ -168,7 +168,7 @@ class WorklistManager:
         worklist = []
 
         try:
-            qry = 'SELECT a.id,a.project_id,a.subj_ses,a.start_date,a.start_time,a.user_id,b.projectName,c.description AS lab_desc FROM calendar_items_new AS a, projects AS b, calendars AS c WHERE a.status in (\'CONFIRMED\',\'TENTATIVE\') AND a.subj_ses like \'%%-%%\' AND a.start_date = DATE(\'%s\') AND a.project_id = b.id AND a.calendar_id = c.id ORDER BY a.start_time' % eDate.strftime('%Y-%m-%d')
+            qry = 'SELECT a.id,a.project_id,a.subj_ses,a.start_date,a.start_time,a.user_id,b.projectName,c.description AS lab_desc FROM calendar_items_new AS a, projects AS b, calendars AS c WHERE a.status IN (\'CONFIRMED\',\'TENTATIVE\') AND a.subj_ses NOT IN (\'Cancellation\',\'0\') AND a.start_date = DATE(\'%s\') AND a.project_id = b.id AND a.calendar_id = c.id ORDER BY a.start_time' % eDate.strftime('%Y-%m-%d')
 
             self.logger.debug(qry)
 
