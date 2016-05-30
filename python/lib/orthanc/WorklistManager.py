@@ -47,7 +47,7 @@ class WorklistItem(object):
 (0040,0001) AE  [$e['modalityAE']]
 (0040,0002) DA  [$e['date']]
 (0040,0003) TM  [$e['time']]
-(0040,0009) SH  [$e['studyId']]
+(0040,0009) SH  [$e['sessionId']]
 (0040,0010) SH  [$e['modalityAE']]
 (0040,0011) SH  [DCCN]
 (0040,0007) LO  [$e['sessionTitle']]
