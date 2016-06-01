@@ -110,7 +110,7 @@ if __name__ == "__main__":
                     action  = 'store',
                     dest    = 'config',
                     type    = valid_path,
-                    default = '%s/config/mr-config.ini' % os.environ['DCCN_PYTHONDIR'],
+                    default = '%s/config/config.ini' % os.environ['DCCN_PYTHONDIR'],
                     help    = 'specify the configuration file')
 
     p.add_argument('-t', '--to',

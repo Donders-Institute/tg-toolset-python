@@ -9,8 +9,8 @@ from orthanc.IOrthanc import IOrthanc
 from orthanc.WorklistManager import WorklistManager
 from common.Utils import makeTabular
 
-iorthanc = IOrthanc(config='%s/config/mr-config.ini' % os.environ['DCCN_PYTHONDIR'])
-wlmgr = WorklistManager(config='%s/config/mr-config.ini' % os.environ['DCCN_PYTHONDIR'])
+iorthanc = IOrthanc(config='%s/config/config.ini' % os.environ['DCCN_PYTHONDIR'])
+wlmgr = WorklistManager(config='%s/config/config.ini' % os.environ['DCCN_PYTHONDIR'])
 
 def load_ipython_extension(ipython):
     ipython.register_magic_function(pacs, 'line', magic_name='pacs')

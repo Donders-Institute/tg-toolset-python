@@ -9,7 +9,7 @@ sys.path.append('%s/lib' % os.environ['DCCN_PYTHONDIR'])
 from rdm.IRDM import IRDMRestful, IRDMIcommand
 from common.Utils import makeTabular
 
-irdm = IRDMRestful(config='%s/config/rdm-config.ini' % os.environ['DCCN_PYTHONDIR'], lvl=0)
+irdm = IRDMRestful(config='%s/config/config.ini' % os.environ['DCCN_PYTHONDIR'], lvl=0)
 
 def load_ipython_extension(ipython):
     ipython.register_magic_function(rdm_list, 'line', magic_name='rdm_list')

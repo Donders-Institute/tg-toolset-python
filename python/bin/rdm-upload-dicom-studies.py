@@ -24,7 +24,7 @@ class DataStreamingAlgorithm(Algorithm):
         self.rdm_datadir_rel = 'raw'
         self.rdm_imode = 'icommands'
         self.irdm = None
-        self.config = '%s/config/rdm-upload-dicom-studies.ini' % os.environ['DCCN_PYTHONDIR']
+        self.config = '%s/config/config.ini' % os.environ['DCCN_PYTHONDIR']
 
     def update_progress(self, progress):
         print '\r[{0}] {1}%'.format('#'*(progress/10), progress)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                       action  = 'store',
                       dest    = 'config',
                       type=valid_path,
-                      default='%s/config/rdm-upload-dicom-studies.ini' % os.environ['DCCN_PYTHONDIR'],
+                      default='%s/config/config.ini' % os.environ['DCCN_PYTHONDIR'],
                       help    = 'specify the configuration file for connecting the DI-RDM and DICOM PACS servers')
 
     parg.add_argument('--rdm-imode',

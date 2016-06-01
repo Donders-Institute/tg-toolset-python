@@ -42,7 +42,7 @@ class RDM(Configurable):
         self.logger = getLogger('RDM', lvl=self.log_level)
 
         if not os.path.exists(self.irods_config):
-            self.irods_config = os.environ['DCCN_PYTHONDIR'] + '/config/rdm-config.ini'
+            self.irods_config = os.environ['DCCN_PYTHONDIR'] + '/config/config.ini'
 
         if self.irods_iftype == 'icommand':
             self.rdm = IRDMIcommand(config=self.irods_config, login=False, lvl=self.log_level)

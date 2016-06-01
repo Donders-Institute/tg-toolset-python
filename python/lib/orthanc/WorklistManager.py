@@ -88,9 +88,9 @@ class WorklistManager:
         cfg = ConfigParser.ConfigParser(defaults=cfg_defaults)
         cfg.read(config)
 
-        self.mr_scanner_regex = re.compile(cfg.get('PACS','mr_scanner_regex'))
-        self.dcmtk_setup = cfg.get('PACS','dcmtk_setup_cmd')
-        self.dcmtk_wlbroker_dir = cfg.get('PACS','dcmtk_wlbroker_store')
+        self.mr_scanner_regex = re.compile(cfg.get('WLBROKER','mr_scanner_regex'))
+        self.dcmtk_setup = cfg.get('WLBROKER','dcmtk_setup_cmd')
+        self.dcmtk_wlbroker_dir = cfg.get('WLBROKER','dcmtk_wlbroker_store')
         self.logger = getLogger(name=self.__class__.__name__, lvl=int(cfg.get('LOGGING', 'level')))
 
         self.__getDBConnectInfo__(cfg)
@@ -106,10 +106,10 @@ class WorklistManager:
         '''common function to get database connection information
         '''
         ## project database connection information
-        self.pdb_host   = cfg.get('PACS','pdb_hostname') 
-        self.pdb_uid    = cfg.get('PACS','pdb_username') 
-        self.pdb_pass   = cfg.get('PACS','pdb_password')
-        self.pdb_name   = cfg.get('PACS','pdb_dbname')
+        self.pdb_host   = cfg.get('PDB','pdb_hostname')
+        self.pdb_uid    = cfg.get('PDB','pdb_username')
+        self.pdb_pass   = cfg.get('PDB','pdb_password')
+        self.pdb_name   = cfg.get('PDB','pdb_dbname')
  
         if not self.pdb_pass:
             ## try ask for password from the interactive shell
