@@ -24,7 +24,7 @@ if __name__ == "__main__":
     ## positional arguments
     parg.add_argument('coll',
                       metavar = 'collection',
-                      nargs   = '1',
+                      nargs   = 1,
                       help    = 'iRODS namespace of collection')
 
     ## optional arguments
