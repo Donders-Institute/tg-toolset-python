@@ -423,7 +423,7 @@ class IRDM:
         else:
             return '', ns_irods
 
-    def __rdm_exec_rule__(self, irule_script, inputs, admin=False):
+    def __rdm_exec_rule__(self, irule_script, inputs, output="*out", outfmt='json', admin=False):
         """
         executes the given irule script
         :param irule_script: the file path to the irule script 
@@ -435,7 +435,9 @@ class IRDM:
                        It will be converted into the following equivalent irule command:
 
                        $ irule -F <irule_script> *param1='"value1"' *param2='"value2"'  
- 
+
+        :param output: the output parameter of the rule, default is *out 
+        :param outfmt: the output parameter format, default is json 
         :return: a dictionary loaded from a returned JSON document
                  strings in the dictionary are utf-8 encoded.
         """
@@ -707,7 +709,7 @@ class IRDMRestful(IRDM):
 
         return True
 
-    def __rdm_exec_rule__(self, irule_script, inputs, admin=False):
+    def __rdm_exec_rule__(self, irule_script, inputs, output="*out", outfmt='json', admin=False):
 
         ## readin content of irule_script
         if not os.path.exists(irule_script):
@@ -745,14 +747,17 @@ class IRDMRestful(IRDM):
         out = []
         try:
             self.logger.debug(cb.contents)
-            out = filter(lambda x:x['parameterName']=='*out', json.loads(cb.contents)['outputParameterResults'])
+            out = filter(lambda x:x['parameterName']==output, json.loads(cb.contents)['outputParameterResults'])
         except KeyError:
             pass
 
         if not out: 
             raise IRDMException('cannot find expected output of rule: ' % irule_script)
 
-        return json.loads(out[0]['resultObject'])
+        if outfmt == 'json':
+            return json.loads(out[0]['resultObject'])
+        else:
+            return out[0]['resultObject'].strip('\n').split('\n')
 
     def __collection_children_list__(self, data):
 
@@ -1157,7 +1162,7 @@ class IRDMIcommand(IRDM):
 
         return groups
 
-    def __rdm_exec_rule__(self, irule_script, inputs, admin=False):
+    def __rdm_exec_rule__(self, irule_script, inputs, output="\*out", outfmt='json', admin=False):
 
         if not os.path.exists(irule_script):
             raise IOError('file not found: %s' % irule_script)
@@ -1169,7 +1174,10 @@ class IRDMIcommand(IRDM):
 
         out = self.__exec_shell_cmd__(cmd, admin=admin)
 
-        return json.loads(re.sub('\*out\s+=\s+','',out), encoding='utf-8')
+        if outfmt == 'json':
+            return json.loads(re.sub('%s\s+=\s+' % output,'',out), encoding='utf-8')
+        else:
+            return out.strip('\n').split('\n')
 
     def __make_proper_ns_collection__(self, ns_collection):
         """

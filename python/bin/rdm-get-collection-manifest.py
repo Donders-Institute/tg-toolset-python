@@ -97,14 +97,16 @@ if __name__ == "__main__":
             irdm.irods_password = args.password
 
     ## when using OTP, retrieve the fresh one-time password and apply it to the next login attempt
-    rule_fpath = os.path.join(os.environ['IRDM_RULE_PREFIX'],'getCollectionManifest.r')
-    out = irdm.__rdm_exec_rule__(irule_script=rule_fpath, inputs={'collName': args.coll[0], 'recursive': int(args.recursive) })
+    rule_fpath = os.path.join(os.environ['IRDM_RULE_PREFIX'],'getCollectionManifest_fast.r')
+    out = irdm.__rdm_exec_rule__(irule_script=rule_fpath, inputs={'collName': args.coll[0], 'recursive': int(args.recursive) }, output='ruleExecOut', outfmt='plain')
 
     if args.checksum:
-        for k,v in out.iteritems():
-            sha256sum = base64.b64decode(re.sub(r'^sha2:', '', v['checksum'])).encode('hex') 
-            print('%s %s' % (sha256sum, relpath(k, args.coll[0])))
+        for l in out:
+            size,chksum,path = l.split(',')
+            sha256sum = base64.b64decode(re.sub(r'^sha2:', '', chksum)).encode('hex') 
+            print('%s %s' % (sha256sum, relpath(path, args.coll[0])))
     else:
-        for k,v in out.iteritems():
-            sha256sum = base64.b64decode(re.sub(r'^sha2:', '', v['checksum'])).encode('hex') 
-            print('%s %s %s' % (sha256sum, relpath(k, args.coll[0]), v['size']))
+        for l in out:
+            size,chksum,path = l.split(',')
+            sha256sum = base64.b64decode(re.sub(r'^sha2:', '', chksum)).encode('hex') 
+            print('%s %s %s' % (sha256sum, relpath(path, args.coll[0]), size))
