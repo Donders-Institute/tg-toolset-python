@@ -1,6 +1,6 @@
 getCollectionManifest {
 
-  *out = '';
+  *out = '{}';
 
   # get manifest (size, iCAT checksum, path) of files right in the collection
   *qry = SELECT DATA_SIZE, DATA_CHECKSUM, COLL_NAME, DATA_NAME WHERE COLL_NAME = '*collName';
@@ -18,7 +18,7 @@ getCollectionManifest {
       *iec = errormsg( msi_json_objops(*out, *mkvp, "set"), *ierrmsg);
   }
 
-  if ( *recursive == 1 ) {
+  if ( bool(*recursive) ) {
       # get manifest (size, iCAT checksum, path) recursively within the collection
       *qry = SELECT DATA_SIZE, DATA_CHECKSUM, COLL_NAME, DATA_NAME WHERE COLL_NAME LIKE '*collName/%';
 
@@ -36,5 +36,5 @@ getCollectionManifest {
       }
   }
 }
-INPUT *collName=$"/rdm/di/dccn/DAC_3010000.01_173", *recursive=$1
+INPUT *collName=$"/rdm/di/dccn/DAC_3010000.01_173", *recursive=$'1'
 OUTPUT *out

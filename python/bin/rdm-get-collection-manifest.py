@@ -3,10 +3,13 @@ import argparse
 
 import os
 import sys
+import re
+import base64
+from os.path import relpath
 
 sys.path.append('%s/external' % os.environ['DCCN_PYTHONDIR'])
 sys.path.append('%s/lib' % os.environ['DCCN_PYTHONDIR'])
-from rdm.IRDM import IRDMIcommand
+from rdm.IRDM import IRDMIcommand, IRDMRestful
 from common.Logger import getLogger
 
 if __name__ == "__main__":
@@ -42,6 +45,12 @@ if __name__ == "__main__":
                       default='restful',
                       help='specify the iRODS client interface for RDM.  Supported interfaces are "icommands" and "restful"')
 
+    parg.add_argument('-r', '--recursive',
+                       dest='recursive',
+                       action='store_true',
+                       default=False,
+                       help='recursively get manifest of objects in sub-directories')
+
     parg.add_argument('-u', '--username',
                        dest='username',
                        action='store',
@@ -53,6 +62,12 @@ if __name__ == "__main__":
                       action='store',
                       default='',
                       help='OTP of the RDM data-access account')
+
+    parg.add_argument('-c', '--checksum',
+                      dest='checksum',
+                      action='store_true',
+                      default=False,
+                      help='produce output compatible with sha256sum')
 
     args = parg.parse_args()
     logger = getLogger(name=os.path.basename(__file__), lvl=3)
@@ -83,7 +98,13 @@ if __name__ == "__main__":
 
     ## when using OTP, retrieve the fresh one-time password and apply it to the next login attempt
     rule_fpath = os.path.join(os.environ['IRDM_RULE_PREFIX'],'getCollectionManifest.r')
-    out = irdm.__rdm_exec_rule__(irule_script=rule_fpath, inputs={'collName': args.coll[0]})
+    out = irdm.__rdm_exec_rule__(irule_script=rule_fpath, inputs={'collName': args.coll[0], 'recursive': int(args.recursive) })
 
-    for k,v in out.iteritems():
-        print('%s %s %s' % (k, v['size'], v['checksum']))
+    if args.checksum:
+        for k,v in out.iteritems():
+            sha256sum = base64.b64decode(re.sub(r'^sha2:', '', v['checksum'])).encode('hex') 
+            print('%s %s' % (sha256sum, relpath(k, args.coll[0])))
+    else:
+        for k,v in out.iteritems():
+            sha256sum = base64.b64decode(re.sub(r'^sha2:', '', v['checksum'])).encode('hex') 
+            print('%s %s %s' % (sha256sum, relpath(k, args.coll[0]), v['size']))
