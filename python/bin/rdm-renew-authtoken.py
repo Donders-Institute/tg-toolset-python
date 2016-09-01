@@ -67,7 +67,7 @@ if __name__ == "__main__":
             irdm.config.set('RDM','irodsPassword', value=out['otp'])
 
     ## remove the file in which the authentication token is stored
-    if irdm.config.get('RDM', 'irodsAuthCached'):
+    if irdm.config.getboolean('RDM', 'irodsAuthCached'):
         try:
             os.unlink(irdm.config.get('RDM', 'irodsAuthFileName'))
         except Exception, e:
