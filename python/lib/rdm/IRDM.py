@@ -49,6 +49,9 @@ class IrodsFile:
             raise NotImplementedError
         return cmp(os.path.join(self.COLL_NAME, self.DATA_NAME), os.path.join(other.COLL_NAME, other.DATA_NAME))
 
+    def __hash__(self):
+        return hash(os.path.join(self.COLL_NAME, self.DATA_NAME))
+
     def __repr__(self):
 
         _ftype = ''
@@ -885,32 +888,25 @@ class IRDMIcommand(IRDM):
 
         self.logger.debug('iRODS query: %s' % qry)
 
-        cmd = 'iquest --no-page "%s"' % qry
+        cmd = 'iquest --no-page "%%s,%%s,%%s,%%s,%%s,%%s,%%s" "%s"' % qry
 
-        output = self.__exec_shell_cmd__(cmd, timeout=60, admin=False)
-
-        re_dat = re.compile('^(\S+)\s=\s(.*)$')
-
-        re_sep = re.compile('^[\-]+$')
+        output = self.__exec_shell_cmd__(cmd, timeout=180, admin=False)
 
         file_data = {}
 
         # parsing iquery output into IrodsFile object
         for l in output.split('\n'):
-            m_dat = re_dat.match(l.strip())
-            if m_dat:
-                file_data[m_dat.group(1)] = m_dat.group(2)
-                continue
+            d = l.strip().split(',')
+            _f = IrodsFile(COLL_NAME=d[0],
+                           DATA_NAME=d[1],
+                           DATA_OWNER_NAME=d[2],
+                           DATA_SIZE=d[3],
+                           DATA_CREATE_TIME=d[4],
+                           DATA_MODIFY_TIME=d[5],
+                           DATA_CHECKSUM=d[6])
 
-            m_sep = re_sep.match(l.strip())
-            if m_sep:
-                _f = IrodsFile(**file_data)
-                if _f not in irods_files:
-                    irods_files.append(_f)
-                file_data = {}
-                continue
-
-        return irods_files
+        # return only the unique IrodsFile objects (i.e. remove replications)
+        return list(set(irods_files))
 
     def mkdir(self, ns_collection, rel_path):
 
@@ -935,6 +931,8 @@ class IRDMIcommand(IRDM):
 
         # get collections and objects within the ns_collection
         irods_files = self.ls(ns_collection, recursive=True)
+
+        self.logger.debug('number of files: %d' % len(irods_files))
 
         cols = list(Set(map(lambda x:x.COLL_NAME, irods_files) + [ns_collection]))
         objs = map(lambda x:os.path.join(x.COLL_NAME, x.DATA_NAME), irods_files)
