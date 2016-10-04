@@ -892,8 +892,6 @@ class IRDMIcommand(IRDM):
 
         output = self.__exec_shell_cmd__(cmd, timeout=180, admin=False)
 
-        file_data = {}
-
         # parsing iquery output into IrodsFile object
         for l in output.split('\n'):
             d = l.strip().split(',')
@@ -904,6 +902,7 @@ class IRDMIcommand(IRDM):
                            DATA_CREATE_TIME=d[4],
                            DATA_MODIFY_TIME=d[5],
                            DATA_CHECKSUM=d[6])
+            irods_files.append(_f)
 
         # return only the unique IrodsFile objects (i.e. remove replications)
         return list(set(irods_files))
@@ -930,26 +929,40 @@ class IRDMIcommand(IRDM):
         rel_path = self.__make_proper_rel_path__(rel_path) 
 
         # get collections and objects within the ns_collection
-        irods_files = self.ls(ns_collection, recursive=True)
+        #irods_files = self.ls(ns_collection, recursive=True)
 
-        self.logger.debug('number of files: %d' % len(irods_files))
+        #self.logger.debug('number of files: %d' % len(irods_files))
 
-        cols = list(Set(map(lambda x:x.COLL_NAME, irods_files) + [ns_collection]))
-        objs = map(lambda x:os.path.join(x.COLL_NAME, x.DATA_NAME), irods_files)
+        #cols = list(Set(map(lambda x:x.COLL_NAME, irods_files) + [ns_collection]))
+        #objs = map(lambda x:os.path.join(x.COLL_NAME, x.DATA_NAME), irods_files)
 
         dest_path = os.path.join(ns_collection, rel_path)
 
-        if dest_path in cols:
+        cmd_isColl = 'iquest "%%s" "select COLL_ID where COLL_NAME = \'%s/%s\'" | grep -v CAT_NO_ROWS_FOUND' % (ns_collection, rel_path)
+        cmd_isData = 'iquest "%%s" "select DATA_ID where COLL_PARENT_NAME = \'%s\' and DATA_NAME = \'%s\'" | grep -v CAT_NO_ROWS_FOUND' % (os.path.dirname(dest_path), os.path.basename(dest_path))
+
+        if self.__exec_shell_cmd__(cmd_isColl, timeout=60, admin=False):
             # the dest_path refers to an existing collection
             dest_path = os.path.join(dest_path, os.path.basename(src_path))
-
-        elif dest_path in objs:
+        
+        elif self.__exec_shell_cmd__(cmd_isData, timeout=60, admin=False):
             # object already presented, do nothing as we will overwrite it
             pass
-
         else:
             # the dest_path is not existing, try create a directory up to its parent before upload
             self.irods_mkdir(dest_path)
+
+        #if dest_path in cols:
+        #    # the dest_path refers to an existing collection
+        #    dest_path = os.path.join(dest_path, os.path.basename(src_path))
+        #
+        #elif dest_path in objs:
+        #    # object already presented, do nothing as we will overwrite it
+        #    pass
+        #
+        #else:
+        #    # the dest_path is not existing, try create a directory up to its parent before upload
+        #    self.irods_mkdir(dest_path)
 
         cmd = 'iput -f -v %s %s' % (src_path, dest_path)
         out = self.__exec_shell_cmd__(cmd, admin=False)
