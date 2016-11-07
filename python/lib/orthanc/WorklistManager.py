@@ -16,8 +16,8 @@ class WorklistItem(object):
         self.projectId = projectId
         self.projectTitle = projectTitle
         self.subjectId = subjectId
-        self.sessionId = 'SESS%s' % sessionId.zfill(2)
-        self.sessionTitle = 'Session %s' % sessionId.zfill(2)
+        self.sessionId = 'ses-mri-%s' % sessionId.zfill(2)
+        self.sessionTitle = 'MR session %s' % sessionId.zfill(2)
         self.date = date
         self.time = time
         self.physician = physician
@@ -26,9 +26,9 @@ class WorklistItem(object):
         self.modalityAE = scanner
 
         if re.match('^[xX]',subjectId):  # subjectId with leading 'x' or 'X' is considered as an extra subject
-            self.patientId = '%s_XTRA%s' % (projectId, re.sub('^[xX]','',subjectId).zfill(4))
+            self.patientId = '%s_sub-x%s' % (projectId, re.sub('^[xX]','',subjectId).zfill(3))
         else:
-            self.patientId = '%s_SUBJ%s' % (projectId, subjectId.zfill(4))
+            self.patientId = '%s_sub-%s' % (projectId, subjectId.zfill(4))
 
         self.studyId = '%s_S%s' % (projectId, sessionId.zfill(2))
 
