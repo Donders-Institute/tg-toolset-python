@@ -21,8 +21,14 @@ def show_studies(studies):
 
     data = []
     for s in studies:
+        desc = ''
+        try:
+            desc = s.MainDicomTags.StudyDescription
+        except AttributeError:
+            desc = s.MainDicomTags.RequestedProcedureDescription.replace(" ",'^')
+
         data.append( {'id'     : s.ID,
-                      'desc'   : s.MainDicomTags.StudyDescription,
+                      'desc'   : desc,
                       'time'   : '%s %s' % (s.MainDicomTags.StudyDate, s.MainDicomTags.StudyTime.split('.')[0]),
                       'patient': s.ParentPatientName})
 
