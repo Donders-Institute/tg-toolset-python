@@ -57,8 +57,14 @@ def download_studies(iorthanc, studies, basedir, show_progress=False, mk_checksu
 
     print('%d studies to download' % len(studies))
     for s in studies:
+        desc = ''
+        try:
+            desc = s.MainDicomTags.StudyDescription
+        except AttributeError:
+            desc = s.MainDicomTags.RequestedProcedureDescription.replace(" ",'^')
+
         rsrc_path = 'studies/%s' % s.ID
-        dest_fpath = os.path.join(basedir, '%s_%s_%s.zip' % (s.MainDicomTags.StudyDescription, s.MainDicomTags.StudyDate, s.MainDicomTags.StudyTime.split('.')[0]))
+        dest_fpath = os.path.join(basedir, '%s_%s_%s.zip' % (desc, s.MainDicomTags.StudyDate, s.MainDicomTags.StudyTime.split('.')[0]))
 
         print('downloading study %s ...' % dest_fpath)
         iorthanc.getArchive(rsrc_path, dest_fpath, progress=show_progress, checksum=mk_checksum)
