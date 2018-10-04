@@ -1,7 +1,0 @@
-#!/bin/bash
-
-# export all local environment variables to remote nodes
-echo "#PBS -V"
-while read i; do
-    echo $i
-done

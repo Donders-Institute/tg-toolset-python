@@ -1,5 +1,0 @@
-#%Module1.0#####################################################################
-##
-## version file for CUDA development environment 
-##
-set ModulesVersion  "5.5"

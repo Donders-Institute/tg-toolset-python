@@ -1,5 +1,0 @@
-#%Module1.0#####################################################################
-##
-## version file for GDCM DICOM Toolkit 
-##
-set ModulesVersion  "2.4.4"
