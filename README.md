@@ -1,4 +1,3 @@
 # hpc-utility
 
-- `opt`: Utility scripts, wrappers for running applications on the DCCN HPC cluster
-- `python`: python scripts, libraries and utility modules
+A dump of python scripts, libraries made over time while managing the DCCN hpc cluster and storage systems.
